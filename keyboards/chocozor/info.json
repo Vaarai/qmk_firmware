@@ -1,0 +1,11 @@
+{
+    "manufacturer": "Chukozor",
+    "maintainer": "Chukozor",
+    "url": "https://github.com/Chukozor/Chocozor_PCB",
+    "usb": {
+        "vid": "0xFEED"
+    },
+    "split": {
+        "enabled": true
+    }
+}
