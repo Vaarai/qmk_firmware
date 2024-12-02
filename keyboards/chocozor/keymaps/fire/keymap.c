@@ -19,13 +19,6 @@
 #include "./keymap.h"
 #include "./tap_dances.h"
 
-/* Flag to enable/disable trackpad scroll */
-bool set_scrolling = false;
-
-/* Variables to store accumulated scroll values */
-float scroll_accumulated_h = 0;
-float scroll_accumulated_v = 0;
-
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_ALPHA] = LAYOUT_split_3x6_4( /* Fire (Oxey) : https://bit.ly/layout-doc-v2 */
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
@@ -41,7 +34,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [_NAV] = LAYOUT_split_3x6_4(
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      _______, G(KC_L), XXXXXXX, CK_SCRL, C(KC_A), XXXXXXX,                      KC_BTN1, KC_BTN2, KC_BTN3, XXXXXXX, XXXXXXX,  KC_DEL,
+      _______, G(KC_L), XXXXXXX, XXXXXXX, C(KC_A), XXXXXXX,                      KC_BTN1, KC_BTN2, KC_BTN3, XXXXXXX, XXXXXXX,  KC_DEL,
   //|--------+--------+ GUI V  +--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       _______, C(KC_X), G(KC_V), C(KC_V), C(KC_C), C(KC_Z),                      KC_WH_U, KC_LEFT, KC_DOWN,   KC_UP,KC_RIGHT, _______, 
   //|ALT LEFT+--------+ ALT SFT+scrnshot+--------+--------|                    |--------+--------+--------+--------+--------+--------|
@@ -55,9 +48,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       _______,    KC_1,    KC_2,    KC_3,    KC_4,    KC_5,                         KC_6,    KC_7,    KC_8,    KC_9,    KC_0,  KC_DEL,
   //|--------+-- / ---+-- { ---+-- ( ---+-- [ ---+-- - ---|                    |--- _ --+--- ] --+-- ) ---+-- } ---+-- \ ---+--------|
-      _______, KC_SLSH, CK_LCBR, CK_LPAR, KC_LBRC, KC_MINS,                      CK_UNSC, KC_RBRC, CK_RPAR, CK_RCBR, KC_BSLS, _______,
+      _______, KC_SLSH, KC_LCBR, KC_LPRN, KC_LBRC, KC_MINS,                      KC_UNDS, KC_RBRC, KC_RPRN, KC_RCBR, KC_BSLS, _______,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      _______, XXXXXXX,  KC_GRV, CK_QMRK,  KC_EQL, XXXXXXX,                      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, _______,
+      _______, XXXXXXX,  KC_GRV, KC_QUES,  KC_EQL, XXXXXXX,                      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, _______,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
                                _______, _______,MO(_ADJUST),_______,    _______, _______, _______, _______
                              //`-----------------------------------'  `-----------------------------------'
@@ -103,31 +96,33 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    switch (keycode) {
-        case CK_RKJMP: /* Warframe rocket jump */
-            if (record->event.pressed) {
-                SEND_STRING(SS_DOWN(X_C));
-            } else {
-                SEND_STRING(SS_DOWN(X_SPC) SS_DELAY(50) SS_UP(X_C) SS_DELAY(50) SS_UP(X_SPC));
-            }
-            return false;
-
-        case CK_DPII: /* Increase trackpad DPI */
-            if (record->event.pressed) {
-                pointing_device_set_cpi(pointing_device_get_cpi()+100);
-            }
-            return false;
-        case CK_DPID: /* Decrease trackpad DPI */
-            if (record->event.pressed) {
-                pointing_device_set_cpi(pointing_device_get_cpi()-100);
-            }
-            return false;
-        case CK_SCRL: /* Toggle set_scrolling when CK_SCRL key is pressed or released */
-            set_scrolling = record->event.pressed;
-            return false;
+    
+    if(IS_USER_KEYCODE(keycode))
+    {
+        switch (keycode) {
+            case CK_RKJMP: /* Warframe rocket jump */
+                if (record->event.pressed) {
+                    SEND_STRING(SS_DOWN(X_C));
+                } else {
+                    SEND_STRING(SS_DOWN(X_SPC) SS_DELAY(50) SS_UP(X_C) SS_DELAY(50) SS_UP(X_SPC));
+                }
+                return false;
+            case CK_DPII: /* Increase trackpad DPI */
+                if (record->event.pressed) {
+                    pointing_device_set_cpi(pointing_device_get_cpi()+100);
+                }
+                return false;
+            case CK_DPID: /* Decrease trackpad DPI */
+                if (record->event.pressed) {
+                    pointing_device_set_cpi(pointing_device_get_cpi()-100);
+                }
+                return false;
+        }
     }
+
     /* Accented letters */
-    if (accent_state != ACCENT_NONE && record->event.pressed)
+    if(accent_state != ACCENT_NONE 
+    && record->event.pressed)
     {
         switch (keycode) {
             case KC_A:
@@ -218,26 +213,8 @@ bool oled_task_user(void) {
     return false;
 }
 
-report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
-    /* Check if drag scrolling is active */
-    if (set_scrolling) {
-        /* Calculate and accumulate scroll values based on mouse movement and divisors */
-        scroll_accumulated_h += (float)mouse_report.x / SCROLL_DIVISOR_H;
-        scroll_accumulated_v += (float)mouse_report.y / SCROLL_DIVISOR_V;
-
-        /* Assign integer parts of accumulated scroll values to the mouse report */
-        mouse_report.h = (int8_t)scroll_accumulated_h;
-        mouse_report.v = (int8_t)scroll_accumulated_v;
-
-        /* Update accumulated scroll values by subtracting the integer parts */
-        scroll_accumulated_h -= (int8_t)scroll_accumulated_h;
-        scroll_accumulated_v -= (int8_t)scroll_accumulated_v;
-
-        /* Clear the X and Y values of the mouse report */
-        mouse_report.x = 0;
-        mouse_report.y = 0;
-    }
-    return mouse_report;
+void pointing_device_init_user(void) {
+    pointing_device_set_cpi(TRACKPAD_DEFAULT_DPI);
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {

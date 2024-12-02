@@ -18,12 +18,8 @@
 
 #include QMK_KEYBOARD_H
 
-/* Trackpad srolling speed adjustment */
-#define SCROLL_DIVISOR_H 8.0
-#define SCROLL_DIVISOR_V 8.0
-
-/* Trackpad srolling enablement flag */
-extern bool set_scrolling;
+/* Trackpad constants */
+#define TRACKPAD_DEFAULT_DPI 600
 
 /* Layers definitions */
 enum layers {
@@ -35,24 +31,18 @@ enum layers {
   _G1
 };
 
-/* Custom Keycodes (CK_xxx) */
-#define CK_LPAR LSFT(KC_9)
-#define CK_RPAR LSFT(KC_0)
-#define CK_LCBR LSFT(KC_LBRC)
-#define CK_RCBR LSFT(KC_RBRC)
-#define CK_QMRK LSFT(KC_SLSH)
+/* - Custom Keycodes (CK_xxx) */
 #define CK_SSHT LSG(KC_S)
-#define CK_UNSC LSFT(KC_MINS)
 #define CK_SELL LSFT(LCTL(KC_LEFT))
 #define CK_SELR LSFT(LCTL(KC_RIGHT))
 
-typedef enum {
+typedef enum user_custom_keycodes_t{
     CK_RKJMP = SAFE_RANGE, /* Warframe rocket/bullet jump */
     CK_DPII,
     CK_DPID,
-    CK_SCRL,
-} cornia_custom_keycodes_t;
+} user_custom_keycodes_t;
 
+/* - Accent letter using Alt + Numpad numbers */
 #define SS_ACCENT_A_GRAVE SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P3) SS_TAP(X_P3) SS_UP(X_LALT) /* à */
 #define SS_ACCENT_C_CEDIL SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P3) SS_TAP(X_P5) SS_UP(X_LALT) /* ç */
 #define SS_ACCENT_E_ACUTE SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P3) SS_TAP(X_P0) SS_UP(X_LALT) /* é */
