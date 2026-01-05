@@ -22,31 +22,28 @@
 #define TRACKPAD_DEFAULT_DPI 600
 
 /* Layers definitions */
-enum layers {
-  _ALPHA,
-  _NAV,
-  _NUM,
-  _ADJUST,
-  _G0,
-  _G1
-};
+enum layers { _ALPHA, _NAV, _NUM, _ADJUST, _G0, _G1 };
 
 /* - Custom Keycodes (CK_xxx) */
 #define CK_SSHT LSG(KC_S)
 #define CK_SELL LSFT(LCTL(KC_LEFT))
 #define CK_SELR LSFT(LCTL(KC_RIGHT))
 
-typedef enum user_custom_keycodes_t{
+typedef enum user_custom_keycodes_t {
     CK_RKJMP = SAFE_RANGE, /* Warframe rocket/bullet jump */
     CK_DPII,
     CK_DPID,
 } user_custom_keycodes_t;
 
 /* - Accent letter using Alt + Numpad numbers */
+#define SS_ACCENT_A_CIRCU SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P3) SS_TAP(X_P1) SS_UP(X_LALT) /* â */
 #define SS_ACCENT_A_GRAVE SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P3) SS_TAP(X_P3) SS_UP(X_LALT) /* à */
 #define SS_ACCENT_C_CEDIL SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P3) SS_TAP(X_P5) SS_UP(X_LALT) /* ç */
 #define SS_ACCENT_E_ACUTE SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P3) SS_TAP(X_P0) SS_UP(X_LALT) /* é */
 #define SS_ACCENT_E_GRAVE SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P3) SS_TAP(X_P8) SS_UP(X_LALT) /* è */
 #define SS_ACCENT_I_CIRCU SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P4) SS_TAP(X_P0) SS_UP(X_LALT) /* î */
+#define SS_ACCENT_I_TREMA SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P3) SS_TAP(X_P9) SS_UP(X_LALT) /* ï */
 #define SS_ACCENT_O_CIRCU SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P4) SS_TAP(X_P7) SS_UP(X_LALT) /* ô */
-#define SS_ACCENT_U_GRAVE SS_DOWN(X_LALT) SS_TAP(X_P0) SS_TAP(X_P2) SS_TAP(X_P4) SS_TAP(X_P9) SS_UP(X_LALT) /* ù */
+#define SS_ACCENT_O_TREMA SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P4) SS_TAP(X_P8) SS_UP(X_LALT) /* ö */
+#define SS_ACCENT_U_CIRCU SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P5) SS_TAP(X_P0) SS_UP(X_LALT) /* û */
+#define SS_ACCENT_U_GRAVE SS_DOWN(X_LALT) SS_TAP(X_P1) SS_TAP(X_P5) SS_TAP(X_P1) SS_UP(X_LALT) /* ù */

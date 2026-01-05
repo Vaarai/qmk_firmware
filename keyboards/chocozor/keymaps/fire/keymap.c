@@ -126,29 +126,67 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     {
         switch (keycode) {
             case KC_A:
-                SEND_STRING(SS_ACCENT_A_GRAVE);
-                break;  
+                switch (accent_state) {
+                    case ACCENT_LEFT:
+                        SEND_STRING(SS_ACCENT_A_GRAVE);
+                        break;
+                    case ACCENT_RIGHT:
+                        SEND_STRING(SS_ACCENT_A_CIRCU);
+                        break;
+                    case ACCENT_NONE:
+                        break;
+                }
+                break;
             case KC_C:
                 SEND_STRING(SS_ACCENT_C_CEDIL);
                 break;
             case KC_E:
                 switch (accent_state) {
                     case ACCENT_LEFT:
-                        SEND_STRING(SS_ACCENT_E_ACUTE); break;
+                        SEND_STRING(SS_ACCENT_E_ACUTE);
+                        break;
                     case ACCENT_RIGHT:
-                        SEND_STRING(SS_ACCENT_E_GRAVE); break;
+                        SEND_STRING(SS_ACCENT_E_GRAVE);
+                        break;
                     case ACCENT_NONE:
                         break;
                 }
-                break;            
+                break;
             case KC_I:
-                SEND_STRING(SS_ACCENT_I_CIRCU);
+                switch (accent_state) {
+                    case ACCENT_LEFT:
+                        SEND_STRING(SS_ACCENT_I_TREMA);
+                        break;
+                    case ACCENT_RIGHT:
+                        SEND_STRING(SS_ACCENT_I_CIRCU);
+                        break;
+                    case ACCENT_NONE:
+                        break;
+                }
                 break;
             case KC_O:
-                SEND_STRING(SS_ACCENT_O_CIRCU);
+                switch (accent_state) {
+                    case ACCENT_LEFT:
+                        SEND_STRING(SS_ACCENT_O_TREMA);
+                        break;
+                    case ACCENT_RIGHT:
+                        SEND_STRING(SS_ACCENT_O_CIRCU);
+                        break;
+                    case ACCENT_NONE:
+                        break;
+                }
                 break;
             case KC_U:
-                SEND_STRING(SS_ACCENT_U_GRAVE);
+                switch (accent_state) {
+                    case ACCENT_LEFT:
+                        SEND_STRING(SS_ACCENT_U_GRAVE);
+                        break;
+                    case ACCENT_RIGHT:
+                        SEND_STRING(SS_ACCENT_U_CIRCU);
+                        break;
+                    case ACCENT_NONE:
+                        break;
+                }
                 break;
         }
         accent_state = ACCENT_NONE;
