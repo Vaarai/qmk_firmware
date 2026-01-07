@@ -95,6 +95,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 };
 
+#define send_string_mod_shift(min, maj) if((get_mods() & MOD_MASK_SHIFT)!=0) \
+                                        { \
+                                            del_mods(MOD_MASK_SHIFT); \
+                                            SEND_STRING(maj); \
+                                        } else { \
+                                            SEND_STRING(min); \
+                                        }
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     
     if(IS_USER_KEYCODE(keycode))
@@ -128,25 +136,25 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case KC_A:
                 switch (accent_state) {
                     case ACCENT_LEFT:
-                        SEND_STRING(SS_ACCENT_A_GRAVE);
+                        send_string_mod_shift(SS_ACCENT_MIN_A_GRAVE, SS_ACCENT_MAJ_A_GRAVE);
                         break;
                     case ACCENT_RIGHT:
-                        SEND_STRING(SS_ACCENT_A_CIRCU);
+                        send_string_mod_shift(SS_ACCENT_MIN_A_CIRCU, SS_ACCENT_MAJ_A_CIRCU);
                         break;
                     case ACCENT_NONE:
                         break;
                 }
                 break;
             case KC_C:
-                SEND_STRING(SS_ACCENT_C_CEDIL);
+                send_string_mod_shift(SS_ACCENT_MIN_C_CEDIL, SS_ACCENT_MAJ_C_CEDIL);
                 break;
             case KC_E:
                 switch (accent_state) {
                     case ACCENT_LEFT:
-                        SEND_STRING(SS_ACCENT_E_ACUTE);
+                        send_string_mod_shift(SS_ACCENT_MIN_E_ACUTE, SS_ACCENT_MAJ_E_ACUTE);
                         break;
                     case ACCENT_RIGHT:
-                        SEND_STRING(SS_ACCENT_E_GRAVE);
+                        send_string_mod_shift(SS_ACCENT_MIN_E_GRAVE, SS_ACCENT_MAJ_E_GRAVE);
                         break;
                     case ACCENT_NONE:
                         break;
@@ -155,10 +163,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case KC_I:
                 switch (accent_state) {
                     case ACCENT_LEFT:
-                        SEND_STRING(SS_ACCENT_I_TREMA);
+                        send_string_mod_shift(SS_ACCENT_MIN_I_TREMA, SS_ACCENT_MAJ_I_TREMA);
                         break;
                     case ACCENT_RIGHT:
-                        SEND_STRING(SS_ACCENT_I_CIRCU);
+                        send_string_mod_shift(SS_ACCENT_MIN_I_CIRCU, SS_ACCENT_MAJ_I_CIRCU);
                         break;
                     case ACCENT_NONE:
                         break;
@@ -167,10 +175,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case KC_O:
                 switch (accent_state) {
                     case ACCENT_LEFT:
-                        SEND_STRING(SS_ACCENT_O_TREMA);
+                        send_string_mod_shift(SS_ACCENT_MIN_O_TREMA, SS_ACCENT_MAJ_O_TREMA);
                         break;
                     case ACCENT_RIGHT:
-                        SEND_STRING(SS_ACCENT_O_CIRCU);
+                        send_string_mod_shift(SS_ACCENT_MIN_O_CIRCU, SS_ACCENT_MAJ_O_CIRCU);
                         break;
                     case ACCENT_NONE:
                         break;
@@ -179,18 +187,21 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case KC_U:
                 switch (accent_state) {
                     case ACCENT_LEFT:
-                        SEND_STRING(SS_ACCENT_U_GRAVE);
+                        send_string_mod_shift(SS_ACCENT_MIN_U_GRAVE, SS_ACCENT_MAJ_U_GRAVE);
                         break;
                     case ACCENT_RIGHT:
-                        SEND_STRING(SS_ACCENT_U_CIRCU);
+                        send_string_mod_shift(SS_ACCENT_MIN_U_CIRCU, SS_ACCENT_MAJ_U_CIRCU);
                         break;
                     case ACCENT_NONE:
                         break;
                 }
                 break;
         }
-        accent_state = ACCENT_NONE;
-        return false;
+        if(keycode >= KC_A && keycode <= KC_Z)
+        {
+            accent_state = ACCENT_NONE;
+            return false;
+        }
     }
     return true;
 }
