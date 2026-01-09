@@ -19,6 +19,10 @@
 #include "./keymap.h"
 #include "./tap_dances.h"
 
+uint16_t check_rgblight_timer = 0;
+uint8_t previous_rgb_matrix_mode = RGB_MATRIX_NONE;
+hsv_t previous_rgb_matrix_hsv = (hsv_t){HSV_OFF};
+
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_ALPHA] = LAYOUT_split_3x6_4( /* Fire (Oxey) : https://bit.ly/layout-doc-v2 */
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
@@ -58,7 +62,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [_ADJUST] = LAYOUT_split_3x6_4(
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                        KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,
+      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, AC_TOGG,                        KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       XXXXXXX, UG_TOGG, UG_HUEU, UG_VALU, CK_DPII, XXXXXXX,                        KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,
   //|--------+--------+--------+--------+--------|--------|                    |--------+--------+--------+--------+--------+--------|
@@ -297,4 +301,28 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
             }
     }
     return false;
+}
+
+bool apply_autocorrect(uint8_t backspaces, const char *str, char *typo, char *correct) {
+    if(rgb_matrix_is_enabled())
+    {
+        previous_rgb_matrix_mode = rgb_matrix_get_mode();
+        previous_rgb_matrix_hsv = rgb_matrix_get_hsv();
+        rgb_matrix_mode(RGB_MATRIX_SOLID_COLOR);
+        rgb_matrix_sethsv(HSV_MAGENTA);
+        check_rgblight_timer = timer_read();
+    }
+
+    return true;
+}
+
+void housekeeping_task_kb(void) {
+    /* Reset RGB Matrix autocorrect indicator */
+    if (previous_rgb_matrix_mode != RGB_MATRIX_NONE && timer_elapsed(check_rgblight_timer) > 200) {
+        rgb_matrix_mode(previous_rgb_matrix_mode);
+        rgb_matrix_sethsv(previous_rgb_matrix_hsv.h, previous_rgb_matrix_hsv.s, previous_rgb_matrix_hsv.v);
+        previous_rgb_matrix_mode = RGB_MATRIX_NONE;
+        previous_rgb_matrix_hsv = (hsv_t){HSV_OFF};
+        check_rgblight_timer = 0;
+    }
 }
