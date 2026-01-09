@@ -1,5 +1,7 @@
 SRC += tap_dances.c
 
+AUTOCORRECT_ENABLE = yes
+
 CAPS_WORD_ENABLE = yes
 TAP_DANCE_ENABLE = yes
 
