@@ -26,6 +26,10 @@ bool set_scrolling = false;
 float scroll_accumulated_h = 0;
 float scroll_accumulated_v = 0;
 
+uint16_t check_rgblight_timer = 0;
+uint8_t previous_rgb_matrix_mode = RGB_MATRIX_NONE;
+hsv_t previous_rgb_matrix_hsv = (hsv_t){HSV_OFF};
+
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_ALPHA] = LAYOUT_split_3x6_3( /* Fire (Oxey) : https://bit.ly/layout-doc-v2 */
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
@@ -43,7 +47,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
        QK_RBT, G(KC_L), XXXXXXX, CK_SCRL, C(KC_A), XXXXXXX,                      MS_BTN1, MS_BTN2, MS_BTN3, XXXXXXX, XXXXXXX,  KC_DEL,
   //|--------+--------+ GUI V  +--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      _______, C(KC_X), G(KC_V), C(KC_V), C(KC_C), C(KC_Z),                      MS_WHLU, KC_LEFT, KC_DOWN,   KC_UP,KC_RIGHT, _______, 
+      _______, C(KC_X), G(KC_V), C(KC_V), C(KC_C), C(KC_Z),                      MS_WHLU, KC_LEFT, KC_DOWN,   KC_UP,KC_RIGHT, _______,
   //|ALT LEFT+--------+ ALT SFT+scrnshot+--------+--------|                    |--------+--------+--------+--------+--------+--------|
    A(KC_LEFT),C(KC_S),S(KC_LALT), CK_SSHT,C(KC_F), C(KC_Y),                      MS_WHLD, KC_HOME, CK_SELL, CK_SELR,  KC_END, _______,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
@@ -65,7 +69,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [_ADJUST] = LAYOUT_split_3x6_3(
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                        KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,
+      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, AC_TOGG,                        KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       XXXXXXX, RM_TOGG, RM_HUEU, RM_VALU, CK_DPII, XXXXXXX,                        KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,
   //|--------+--------+--------+--------+--------|--------|                    |--------+--------+--------+--------+--------+--------|
@@ -275,4 +279,28 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         mouse_report.y = 0;
     }
     return mouse_report;
+}
+
+bool apply_autocorrect(uint8_t backspaces, const char *str, char *typo, char *correct) {
+    if(rgb_matrix_is_enabled())
+    {
+        previous_rgb_matrix_mode = rgb_matrix_get_mode();
+        previous_rgb_matrix_hsv = rgb_matrix_get_hsv();
+        rgb_matrix_mode(RGB_MATRIX_SOLID_COLOR);
+        rgb_matrix_sethsv(HSV_MAGENTA);
+        check_rgblight_timer = timer_read();
+    }
+
+    return true;
+}
+
+void housekeeping_task_kb(void) {
+    /* Reset RGB Matrix autocorrect indicator */
+    if (previous_rgb_matrix_mode != RGB_MATRIX_NONE && timer_elapsed(check_rgblight_timer) > 200) {
+        rgb_matrix_mode(previous_rgb_matrix_mode);
+        rgb_matrix_sethsv(previous_rgb_matrix_hsv.h, previous_rgb_matrix_hsv.s, previous_rgb_matrix_hsv.v);
+        previous_rgb_matrix_mode = RGB_MATRIX_NONE;
+        previous_rgb_matrix_hsv = (hsv_t){HSV_OFF};
+        check_rgblight_timer = 0;
+    }
 }
