@@ -101,7 +101,12 @@ void dance_nav_accent_finished (tap_dance_state_t *state, void *user_data)
             break;
         case DOUBLE_TAP:
         case DOUBLE_HOLD:
-            accent_state = ACCENT_LEFT;
+            if(accent_state == ACCENT_RIGHT)
+            {
+                accent_state = ACCENT_SUPER_LEFT;
+            } else {
+                accent_state = ACCENT_LEFT;
+            }
             break;
         case OTHER_TAP:
             break;
@@ -132,7 +137,12 @@ void dance_num_accent_finished (tap_dance_state_t *state, void *user_data)
             break;
         case DOUBLE_TAP:
         case DOUBLE_HOLD:
-            accent_state = ACCENT_RIGHT;
+            if(accent_state == ACCENT_LEFT)
+            {
+                accent_state = ACCENT_SUPER_RIGHT;
+            } else {
+                accent_state = ACCENT_RIGHT;
+            }
             break;
         case OTHER_TAP:
             break;

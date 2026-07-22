@@ -30,7 +30,9 @@ enum tap_dances {
 typedef enum {
   ACCENT_NONE,
   ACCENT_LEFT,
-  ACCENT_RIGHT
+  ACCENT_RIGHT,
+  ACCENT_SUPER_LEFT,
+  ACCENT_SUPER_RIGHT
 } accent_state_t;
 
 extern accent_state_t accent_state;

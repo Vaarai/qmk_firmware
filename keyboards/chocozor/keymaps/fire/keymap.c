@@ -141,7 +141,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     case ACCENT_RIGHT:
                         send_string_mod_shift(SS_ACCENT_MIN_A_CIRCU, SS_ACCENT_MAJ_A_CIRCU);
                         break;
-                    case ACCENT_NONE:
+                    default:
                         break;
                 }
                 break;
@@ -156,6 +156,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     case ACCENT_RIGHT:
                         send_string_mod_shift(SS_ACCENT_MIN_E_GRAVE, SS_ACCENT_MAJ_E_GRAVE);
                         break;
+                    case ACCENT_SUPER_LEFT:
+                        send_string_mod_shift(SS_ACCENT_MIN_E_CIRCU, SS_ACCENT_MAJ_E_CIRCU);
+                        break;
+                    case ACCENT_SUPER_RIGHT:
+                        send_string_mod_shift(SS_ACCENT_EURO, SS_ACCENT_EURO);
+                        break;
                     case ACCENT_NONE:
                         break;
                 }
@@ -168,7 +174,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     case ACCENT_RIGHT:
                         send_string_mod_shift(SS_ACCENT_MIN_I_CIRCU, SS_ACCENT_MAJ_I_CIRCU);
                         break;
-                    case ACCENT_NONE:
+                    default:
                         break;
                 }
                 break;
@@ -180,7 +186,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     case ACCENT_RIGHT:
                         send_string_mod_shift(SS_ACCENT_MIN_O_CIRCU, SS_ACCENT_MAJ_O_CIRCU);
                         break;
-                    case ACCENT_NONE:
+                    default:
                         break;
                 }
                 break;
@@ -192,7 +198,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     case ACCENT_RIGHT:
                         send_string_mod_shift(SS_ACCENT_MIN_U_CIRCU, SS_ACCENT_MAJ_U_CIRCU);
                         break;
-                    case ACCENT_NONE:
+                    default:
                         break;
                 }
                 break;
