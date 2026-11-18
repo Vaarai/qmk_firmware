@@ -5,7 +5,8 @@
  * - one finger moves the cursor, and a flick glides on (QMK's cursor glide)
  * - tap: left click. The button stays down for TP_DRAG_GAP after the tap, so
  *   touching again in that time drags until the finger lifts; tapping again
- *   instead makes a double click
+ *   instead makes a double click, so the cursor holds still during that second
+ *   touch until it moves or lasts too long for a tap
  * - tap in the top-right corner: right click; top-left corner: middle click
  * Holding NAV turns motion into scrolling (pointing_device_task_user). */
 
@@ -93,6 +94,9 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
             dy = d.yValue - tp.sy;
             uint8_t far = MAX(abs(ux - tp.x0), abs(uy - tp.y0));
             tp.travel   = MAX(tp.travel, far);
+            if (tp.drag && tp.travel < TP_TAP_SLOP && timer_elapsed(tp.since) < TP_TAP_TERM) {
+                dx = dy = 0; /* maybe a double tap: jitter with the button down would be a drag */
+            }
         }
         tp.sx = d.xValue;
         tp.sy = d.yValue;
