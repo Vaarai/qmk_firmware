@@ -24,11 +24,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
        KC_TAB, DV_QUOT, DV_COMM,  DV_DOT,    DV_P,    DV_Y,                         DV_F,    DV_G,    DV_C,    DV_R,    DV_L, KC_BSPC,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-       KC_ESC,   HRM_A,   HRM_O,   HRM_E,    DV_U,    DV_I,                         DV_D,    DV_H,   HRM_T,   HRM_N,   HRM_S, KC_LALT,
+       KC_ESC,   HRM_A,   HRM_O,   HRM_E,    DV_U,    DV_I,                         DV_D,    DV_H,   HRM_T,   HRM_N,   HRM_S, DV_MINS,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      KC_LCTL, DV_SCLN,    DV_Q,    DV_J,    DV_K,    DV_X,                         DV_B,    DV_M,    DV_W,    DV_V,    DV_Z, KC_RCTL,
+      KC_LCTL, DV_SCLN,    DV_Q,    DV_J,    DV_K,    DV_X,                         DV_B,    DV_M,    DV_W,    DV_V,    DV_Z,  KC_ENT,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
-               KC_LGUI, KC_SPC, TD(TD_SFT_CAPSW), MO(_NAV),   MO(_NUM), TD(TD_SFT_CAPSW), KC_ENT, KC_RGUI
+               KC_LGUI, KC_SPC, TD(TD_SFT_CAPSW), MO(_NAV),   MO(_NUM), TD(TD_SFT_CAPSW), KC_BSPC, KC_RGUI
                              //`-----------------------------------'  `-----------------------------------'
   ),
 
