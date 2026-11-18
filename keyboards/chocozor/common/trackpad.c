@@ -5,7 +5,8 @@
  * - one finger moves the cursor, and a flick glides on (QMK's cursor glide)
  * - tap: left click. The button stays down for TP_DRAG_GAP after the tap, so
  *   touching again in that time drags until the finger lifts; tapping again
- *   instead makes a double click
+ *   instead makes a double click, so the cursor holds still during that second
+ *   touch until it moves or lasts too long for a tap
  * - tap in the top-right corner: right click; top-left corner: middle click
  * Holding NAV turns motion into scrolling (pointing_device_task_user). */
 /* Shared copy of keymaps/elies/trackpad.c (Aetherall), used by fire_v2_9 over SPI. */
@@ -19,6 +20,9 @@
 #define TP_DRAG_GAP 220 /* ms: a touch this soon after a tap drags */
 #define TP_CORNER 72    /* pad units: size of the corners that right and middle click */
 #define TP_SCROLL_DIV 24 /* cursor counts per scroll step with NAV held */
+#define TP_CLICK 30      /* ms a click holds its button, and the gap before a
+                          * click right after a release: libinput drops a
+                          * release and press closer than ~12 ms as bounce */
 
 #define TP_BUTTONS (MOUSE_BTN1 | MOUSE_BTN2 | MOUSE_BTN3)
 
@@ -30,7 +34,8 @@ static struct {
     uint8_t  x0, y0, travel;
     uint16_t sx, sy; /* last scaled position */
     uint8_t  held;   /* buttons down until we let go */
-    uint8_t  flash;  /* buttons to press for the next report only */
+    uint8_t  click;    /* buttons of a click under way */
+    uint16_t click_at; /* when it presses; it releases TP_CLICK later */
 } tp;
 
 static trackpad_touch_t       last;
@@ -65,11 +70,9 @@ void pointing_device_driver_set_cpi(uint16_t cpi) {
 }
 
 report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
-    uint8_t         flash = tp.flash;
     pinnacle_data_t d     = cirque_pinnacle_read_data();
     cursor_glide_t  glided = cursor_glide_check(&glide);
     int16_t         dx = 0, dy = 0;
-    tp.flash               = 0;
 
     if (tp.tapped && !tp.touching && timer_elapsed(tp.since) > TP_DRAG_GAP) {
         tp.tapped = false;
@@ -94,6 +97,9 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
             dy = d.yValue - tp.sy;
             uint8_t far = MAX(abs(ux - tp.x0), abs(uy - tp.y0));
             tp.travel   = MAX(tp.travel, far);
+            if (tp.drag && tp.travel < TP_TAP_SLOP && timer_elapsed(tp.since) < TP_TAP_TERM) {
+                dx = dy = 0; /* maybe a double tap: jitter with the button down would be a drag */
+            }
         }
         tp.sx = d.xValue;
         tp.sy = d.yValue;
@@ -105,10 +111,12 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
         if (tp.drag) {
             tp.held &= ~MOUSE_BTN1;
             if (tap) {
-                tp.flash = MOUSE_BTN1;
+                tp.click    = MOUSE_BTN1;
+                tp.click_at = timer_read() + TP_CLICK;
             }
         } else if (tap && corner_button(tp.x0, tp.y0)) {
-            flash |= corner_button(tp.x0, tp.y0);
+            tp.click    = corner_button(tp.x0, tp.y0);
+            tp.click_at = timer_read();
         } else if (tap) {
             tp.held |= MOUSE_BTN1;
             tp.tapped = true;
@@ -128,7 +136,16 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
 
     report.x       = CONSTRAIN_HID_XY(dx);
     report.y       = CONSTRAIN_HID_XY(dy);
-    report.buttons = (report.buttons & ~TP_BUTTONS) | tp.held | flash;
+    uint8_t clicking = 0;
+    if (tp.click) {
+        int16_t t = (int16_t)(timer_read() - tp.click_at);
+        if (t >= TP_CLICK) {
+            tp.click = 0;
+        } else if (t >= 0) {
+            clicking = tp.click;
+        }
+    }
+    report.buttons = (report.buttons & ~TP_BUTTONS) | tp.held | clicking;
     return report;
 }
 
