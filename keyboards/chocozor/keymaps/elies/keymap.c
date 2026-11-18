@@ -28,7 +28,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       KC_LSFT, DV_SCLN,    DV_Q,    DV_J,    DV_K,    DV_X,                         DV_B,    DV_M,    DV_W,    DV_V,    DV_Z, KC_RSFT,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
-               KC_LGUI, KC_SPC, MO(_NAV), TD(TD_SFT_CAPSW),   TD(TD_SFT_CAPSW), MO(_NUM), KC_BSPC,  KC_ENT
+               KC_LGUI, KC_SPC, MO(_NAV), TD(TD_SFT_CAPSW),             KC_ENT, MO(_NUM), KC_BSPC,  KC_ENT
                              //`-----------------------------------'  `-----------------------------------'
   ),
 
