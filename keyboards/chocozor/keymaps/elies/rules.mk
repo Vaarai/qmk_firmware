@@ -1,4 +1,6 @@
-SRC += tap_dances.c
+SRC += tap_dances.c hud.c
+
+RAW_ENABLE = yes
 
 MOUSEKEY_ENABLE = yes
 CAPS_WORD_ENABLE = yes
