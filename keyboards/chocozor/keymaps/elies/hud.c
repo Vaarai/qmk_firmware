@@ -8,6 +8,9 @@
  *                               keycodes (u16 LE)...] from matrix index on
  *   [HUD_ENCODERS, layer]       answered by [HUD_ENCODERS, layer, count,
  *                               (ccw, cw) keycode pairs (u16 LE)...]
+ *   [HUD_TOUCH]                 answered by [HUD_TOUCH, x, y, z, touching], the
+ *                               pad's last touch (trackpad.h), when this half
+ *                               has the pad
  *   [HUD_BOOT, 'B', 'O', 'O', 'T'] reboots into the bootloader (flash.py)
  * Board -> host, on any change while the stream is on:
  *   [HUD_STATE, layer_state (u32 LE), default_layer_state (u32 LE), mods,
@@ -19,8 +22,9 @@
 #include QMK_KEYBOARD_H
 #include "raw_hid.h"
 #include "keymap_introspection.h"
+#include "trackpad.h"
 
-enum { HUD_HELLO = 1, HUD_KEYMAP = 2, HUD_STATE = 3, HUD_BOOT = 4, HUD_ENCODERS = 5 };
+enum { HUD_HELLO = 1, HUD_KEYMAP = 2, HUD_STATE = 3, HUD_BOOT = 4, HUD_ENCODERS = 5, HUD_TOUCH = 6 };
 
 #define HUD_REPORT 32
 #define HUD_ALIVE_MS 3000
@@ -83,6 +87,14 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
                     }
                 }
             }
+            break;
+        }
+        case HUD_TOUCH: {
+            trackpad_touch_t t = trackpad_last_touch();
+            out[1]             = t.x;
+            out[2]             = t.y;
+            out[3]             = t.z;
+            out[4]             = t.touching;
             break;
         }
         case HUD_BOOT:
