@@ -50,7 +50,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
        QK_RBT, G(KC_L), XXXXXXX, XXXXXXX, C(KC_A), XXXXXXX,                      MS_BTN1, MS_BTN2, MS_BTN3, XXXXXXX, XXXXXXX, _______,
   //|--------+--------+ GUI V  +--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      _______, C(KC_X), G(KC_V), C(KC_V), C(KC_C), C(KC_Z),                      MS_WHLU, KC_LEFT, KC_DOWN,   KC_UP,KC_RIGHT, _______, 
+      _______, C(KC_X), G(KC_V), C(KC_V), C(KC_C), C(KC_Z),                      MS_WHLU, KC_LEFT, KC_DOWN,   KC_UP,KC_RIGHT, _______,
   //|ALT LEFT+--------+ ALT SFT+scrnshot+--------+--------|                    |--------+--------+--------+--------+--------+--------|
    A(KC_LEFT),C(KC_S),S(KC_LALT), CK_SSHT,C(KC_F), C(KC_Y),                      MS_WHLD, KC_HOME, CK_CTLL, CK_CTLR,  KC_END, _______,
   //|--------+--------+--------+--------+--------+--------'                    `--------+--------+--------+--------+--------+--------|
@@ -136,7 +136,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                         }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    
+
     if(IS_USER_KEYCODE(keycode))
     {
         switch (keycode) {
@@ -161,7 +161,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
 
     /* Accented letters */
-    if(accent_state != ACCENT_NONE 
+    if(accent_state != ACCENT_NONE
     && record->event.pressed)
     {
         switch (keycode) {
@@ -173,7 +173,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     case ACCENT_RIGHT:
                         send_string_mod_shift(SS_ACCENT_MIN_A_CIRCU, SS_ACCENT_MAJ_A_CIRCU);
                         break;
-                    case ACCENT_NONE:
+                    default:
                         break;
                 }
                 break;
@@ -188,7 +188,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     case ACCENT_RIGHT:
                         send_string_mod_shift(SS_ACCENT_MIN_E_GRAVE, SS_ACCENT_MAJ_E_GRAVE);
                         break;
-                    case ACCENT_NONE:
+                    case ACCENT_SUPER_LEFT:
+                        send_string_mod_shift(SS_ACCENT_MIN_E_CIRCU, SS_ACCENT_MAJ_E_CIRCU);
+                        break;
+                    case ACCENT_SUPER_RIGHT:
+                        send_string_mod_shift(SS_ACCENT_EURO, SS_ACCENT_EURO);
+                        break;
+                    default:
                         break;
                 }
                 break;
@@ -200,7 +206,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     case ACCENT_RIGHT:
                         send_string_mod_shift(SS_ACCENT_MIN_I_CIRCU, SS_ACCENT_MAJ_I_CIRCU);
                         break;
-                    case ACCENT_NONE:
+                    default:
                         break;
                 }
                 break;
@@ -212,7 +218,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     case ACCENT_RIGHT:
                         send_string_mod_shift(SS_ACCENT_MIN_O_CIRCU, SS_ACCENT_MAJ_O_CIRCU);
                         break;
-                    case ACCENT_NONE:
+                    default:
                         break;
                 }
                 break;
@@ -224,7 +230,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     case ACCENT_RIGHT:
                         send_string_mod_shift(SS_ACCENT_MIN_U_CIRCU, SS_ACCENT_MAJ_U_CIRCU);
                         break;
-                    case ACCENT_NONE:
+                    default:
                         break;
                 }
                 break;
@@ -259,7 +265,7 @@ bool oled_task_user(void) {
 
     /* Print cornia logo */
     chocozor_render_logo();
-    
+
     /* Clear DPI display */
     oled_set_cursor(0, 13);
     oled_write_ln(dpi_string, 0);
@@ -314,7 +320,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
         case _ADJUST:
         case _G0:
         case _G1:
-            if (index == 0) { tap_code((clockwise ? KC_VOLU : KC_VOLD)); } 
+            if (index == 0) { tap_code((clockwise ? KC_VOLU : KC_VOLD)); }
             else if (index == 1) {
                 /* - Hold Alt, it will be released at next layer switch in `layer_state_set_user()` */
                 SEND_STRING(SS_DOWN(X_LALT));
@@ -356,7 +362,7 @@ void housekeeping_task_kb(void) {
 bool get_haptic_enabled_key(uint16_t keycode, keyrecord_t *record) {
     //switch (keycode) {
     //    case KC_ESC:
-    //        return true;    
+    //        return true;
     //        break;
     //}
     return false;

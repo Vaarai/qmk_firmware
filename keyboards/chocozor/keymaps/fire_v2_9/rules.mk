@@ -1,4 +1,4 @@
-SRC += ../../common/tap_dances.c
+SRC += keyboards/chocozor/common/tap_dances.c
 
 AUTOCORRECT_ENABLE = yes
 MOUSEKEY_ENABLE = yes
