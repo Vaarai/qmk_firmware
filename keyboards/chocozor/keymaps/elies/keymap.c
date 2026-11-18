@@ -24,11 +24,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
        KC_TAB, DV_QUOT, DV_COMM,  DV_DOT,    DV_P,    DV_Y,                         DV_F,    DV_G,    DV_C,    DV_R,    DV_L, KC_BSPC,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-       KC_ESC,    DV_A,    DV_O,    DV_E,    DV_U,    DV_I,                         DV_D,    DV_H,    DV_T,    DV_N,    DV_S, KC_LALT,
+       KC_ESC,   HRM_A,   HRM_O,   HRM_E,    DV_U,    DV_I,                         DV_D,    DV_H,   HRM_T,   HRM_N,   HRM_S, KC_LALT,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       KC_LCTL, DV_SCLN,    DV_Q,    DV_J,    DV_K,    DV_X,                         DV_B,    DV_M,    DV_W,    DV_V,    DV_Z, KC_RCTL,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
-               KC_LGUI, KC_SPC, TD(TD_SFT_CAPSW), TD(TD_NAV_ACCENT),   TD(TD_NUM_ACCENT), TD(TD_SFT_CAPSW), KC_ENT, KC_RGUI
+               KC_LGUI, KC_SPC, TD(TD_SFT_CAPSW), MO(_NAV),   MO(_NUM), TD(TD_SFT_CAPSW), KC_ENT, KC_RGUI
                              //`-----------------------------------'  `-----------------------------------'
   ),
 
@@ -95,14 +95,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 };
 
-#define send_string_mod_shift(min, maj) if((get_mods() & MOD_MASK_SHIFT)!=0) \
-                                        { \
-                                            del_mods(MOD_MASK_SHIFT); \
-                                            SEND_STRING(maj); \
-                                        } else { \
-                                            SEND_STRING(min); \
-                                        }
-
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     
     if(IS_USER_KEYCODE(keycode))
@@ -125,93 +117,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     pointing_device_set_cpi(pointing_device_get_cpi()-100);
                 }
                 return false;
-        }
-    }
-
-    /* Accented letters */
-    if(accent_state != ACCENT_NONE 
-    && record->event.pressed
-    && IS_BASIC_KEYCODE(keycode))
-    {
-        bool accented = true;
-        switch (keycode) {
-            case DV_A:
-                switch (accent_state) {
-                    case ACCENT_LEFT:
-                        send_string_mod_shift(SS_ACCENT_MIN_A_GRAVE, SS_ACCENT_MAJ_A_GRAVE);
-                        break;
-                    case ACCENT_RIGHT:
-                        send_string_mod_shift(SS_ACCENT_MIN_A_CIRCU, SS_ACCENT_MAJ_A_CIRCU);
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case DV_C:
-                send_string_mod_shift(SS_ACCENT_MIN_C_CEDIL, SS_ACCENT_MAJ_C_CEDIL);
-                break;
-            case DV_E:
-                switch (accent_state) {
-                    case ACCENT_LEFT:
-                        send_string_mod_shift(SS_ACCENT_MIN_E_ACUTE, SS_ACCENT_MAJ_E_ACUTE);
-                        break;
-                    case ACCENT_RIGHT:
-                        send_string_mod_shift(SS_ACCENT_MIN_E_GRAVE, SS_ACCENT_MAJ_E_GRAVE);
-                        break;
-                    case ACCENT_SUPER_LEFT:
-                        send_string_mod_shift(SS_ACCENT_MIN_E_CIRCU, SS_ACCENT_MAJ_E_CIRCU);
-                        break;
-                    case ACCENT_SUPER_RIGHT:
-                        send_string_mod_shift(SS_ACCENT_EURO, SS_ACCENT_EURO);
-                        break;
-                    case ACCENT_NONE:
-                        break;
-                }
-                break;
-            case DV_I:
-                switch (accent_state) {
-                    case ACCENT_LEFT:
-                        send_string_mod_shift(SS_ACCENT_MIN_I_TREMA, SS_ACCENT_MAJ_I_TREMA);
-                        break;
-                    case ACCENT_RIGHT:
-                        send_string_mod_shift(SS_ACCENT_MIN_I_CIRCU, SS_ACCENT_MAJ_I_CIRCU);
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case DV_O:
-                switch (accent_state) {
-                    case ACCENT_LEFT:
-                        send_string_mod_shift(SS_ACCENT_MIN_O_TREMA, SS_ACCENT_MAJ_O_TREMA);
-                        break;
-                    case ACCENT_RIGHT:
-                        send_string_mod_shift(SS_ACCENT_MIN_O_CIRCU, SS_ACCENT_MAJ_O_CIRCU);
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case DV_U:
-                switch (accent_state) {
-                    case ACCENT_LEFT:
-                        send_string_mod_shift(SS_ACCENT_MIN_U_GRAVE, SS_ACCENT_MAJ_U_GRAVE);
-                        break;
-                    case ACCENT_RIGHT:
-                        send_string_mod_shift(SS_ACCENT_MIN_U_CIRCU, SS_ACCENT_MAJ_U_CIRCU);
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            default:
-                accented = false;
-                break;
-        }
-        accent_state = ACCENT_NONE;
-        if(accented)
-        {
-            return false;
         }
     }
     return true;
