@@ -19,9 +19,11 @@
 #include "./keymap.h"
 #include "./tap_dances.h"
 
+#ifdef RGB_MATRIX_ENABLE
 uint16_t check_rgblight_timer = 0;
 uint8_t previous_rgb_matrix_mode = RGB_MATRIX_NONE;
 hsv_t previous_rgb_matrix_hsv = (hsv_t){HSV_OFF};
+#endif // RGB_MATRIX_ENABLE
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_ALPHA] = LAYOUT_split_3x6_4( /* Fire (Oxey) : https://bit.ly/layout-doc-v2 */
@@ -42,7 +44,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+ GUI V  +--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       _______, C(KC_X), G(KC_V), C(KC_V), C(KC_C), C(KC_Z),                      MS_WHLU, KC_LEFT, KC_DOWN,   KC_UP,KC_RIGHT, _______, 
   //|ALT LEFT+--------+ ALT SFT+scrnshot+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-   A(KC_LEFT),C(KC_S),S(KC_LALT), CK_SSHT,C(KC_F), C(KC_Y),                      MS_WHLD, KC_HOME, CK_SELL, CK_SELR,  KC_END, _______,
+   A(KC_LEFT),C(KC_S),S(KC_LALT), CK_SSHT,C(KC_F), C(KC_Y),                      MS_WHLD, KC_HOME, CK_CTLL, CK_CTLR,  KC_END, _______,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
                                  _______, _______, _______, _______,  _______,MO(_ADJUST),_______, _______
                              //`-----------------------------------'  `-----------------------------------'
@@ -304,6 +306,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 }
 
 bool apply_autocorrect(uint8_t backspaces, const char *str, char *typo, char *correct) {
+    #ifdef RGB_MATRIX_ENABLE
     if(rgb_matrix_is_enabled())
     {
         previous_rgb_matrix_mode = rgb_matrix_get_mode();
@@ -312,11 +315,12 @@ bool apply_autocorrect(uint8_t backspaces, const char *str, char *typo, char *co
         rgb_matrix_sethsv(HSV_MAGENTA);
         check_rgblight_timer = timer_read();
     }
-
+    #endif // RGB_MATRIX_ENABLE
     return true;
 }
 
 void housekeeping_task_kb(void) {
+    #ifdef RGB_MATRIX_ENABLE
     /* Reset RGB Matrix autocorrect indicator */
     if (previous_rgb_matrix_mode != RGB_MATRIX_NONE && timer_elapsed(check_rgblight_timer) > 200) {
         rgb_matrix_mode(previous_rgb_matrix_mode);
@@ -325,4 +329,5 @@ void housekeeping_task_kb(void) {
         previous_rgb_matrix_hsv = (hsv_t){HSV_OFF};
         check_rgblight_timer = 0;
     }
+    #endif // RGB_MATRIX_ENABLE
 }

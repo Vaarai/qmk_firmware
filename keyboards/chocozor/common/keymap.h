@@ -26,8 +26,8 @@ enum layers { _ALPHA, _NAV, _NUM, _ADJUST, _G0, _G1 };
 
 /* - Custom Keycodes (CK_xxx) */
 #define CK_SSHT LSG(KC_S)
-#define CK_SELL LSFT(LCTL(KC_LEFT))
-#define CK_SELR LSFT(LCTL(KC_RIGHT))
+#define CK_CTLL LCTL(KC_LEFT)
+#define CK_CTLR LCTL(KC_RIGHT)
 
 typedef enum user_custom_keycodes_t {
     CK_RKJMP = SAFE_RANGE, /* Warframe rocket/bullet jump */
