@@ -5,6 +5,7 @@
  *                               answered by [HUD_HELLO, layers, rows, cols]
  *   [HUD_KEYMAP, layer, index]  answered by [HUD_KEYMAP, layer, index, count,
  *                               keycodes (u16 LE)...] from matrix index on
+ *   [HUD_BOOT, 'B', 'O', 'O', 'T'] reboots into the bootloader (flash.py)
  * Board -> host, on any change while the stream is on:
  *   [HUD_STATE, layer_state (u32 LE), default_layer_state (u32 LE), mods,
  *    oneshot mods, caps word, rows, one matrix row bitmask per row...]
@@ -16,7 +17,7 @@
 #include "raw_hid.h"
 #include "keymap_introspection.h"
 
-enum { HUD_HELLO = 1, HUD_KEYMAP = 2, HUD_STATE = 3 };
+enum { HUD_HELLO = 1, HUD_KEYMAP = 2, HUD_STATE = 3, HUD_BOOT = 4 };
 
 #define HUD_REPORT 32
 #define HUD_ALIVE_MS 3000
@@ -64,6 +65,11 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
             out[3] = count;
             break;
         }
+        case HUD_BOOT:
+            if (memcmp(&data[1], "BOOT", 4) == 0) {
+                reset_keyboard();
+            }
+            return;
         default:
             return;
     }
