@@ -26,7 +26,6 @@
 enum layers { _ALPHA, _NAV, _NUM, _ADJUST, _G0, _G1 };
 
 /* - Custom Keycodes (CK_xxx) */
-#define CK_SSHT LSG(DV_S)
 
 /* Home row mods: Ctrl Alt Gui | Gui Alt Ctrl */
 #define HRM_A LCTL_T(DV_A)
