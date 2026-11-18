@@ -2,9 +2,12 @@
  *
  * Host -> board:
  *   [HUD_HELLO]                 keeps the state stream on for HUD_ALIVE_MS,
- *                               answered by [HUD_HELLO, layers, rows, cols]
+ *                               answered by [HUD_HELLO, layers, rows, cols,
+ *                               encoders]
  *   [HUD_KEYMAP, layer, index]  answered by [HUD_KEYMAP, layer, index, count,
  *                               keycodes (u16 LE)...] from matrix index on
+ *   [HUD_ENCODERS, layer]       answered by [HUD_ENCODERS, layer, count,
+ *                               (ccw, cw) keycode pairs (u16 LE)...]
  *   [HUD_BOOT, 'B', 'O', 'O', 'T'] reboots into the bootloader (flash.py)
  * Board -> host, on any change while the stream is on:
  *   [HUD_STATE, layer_state (u32 LE), default_layer_state (u32 LE), mods,
@@ -17,13 +20,14 @@
 #include "raw_hid.h"
 #include "keymap_introspection.h"
 
-enum { HUD_HELLO = 1, HUD_KEYMAP = 2, HUD_STATE = 3, HUD_BOOT = 4 };
+enum { HUD_HELLO = 1, HUD_KEYMAP = 2, HUD_STATE = 3, HUD_BOOT = 4, HUD_ENCODERS = 5 };
 
 #define HUD_REPORT 32
 #define HUD_ALIVE_MS 3000
 #define HUD_KEYS (MATRIX_ROWS * MATRIX_COLS)
 
 _Static_assert(MATRIX_COLS <= 8, "one byte per matrix row");
+_Static_assert(3 + 4 * NUM_ENCODERS <= HUD_REPORT, "encoder report too long");
 _Static_assert(12 + MATRIX_ROWS <= HUD_REPORT, "state report too long");
 
 static bool     hud_alive;
@@ -49,6 +53,7 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
             out[1]    = keymap_layer_count();
             out[2]    = MATRIX_ROWS;
             out[3]    = MATRIX_COLS;
+            out[4]    = NUM_ENCODERS;
             break;
         case HUD_KEYMAP: {
             uint8_t layer = data[1], index = data[2], count = 0;
@@ -63,6 +68,21 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
                 }
             }
             out[3] = count;
+            break;
+        }
+        case HUD_ENCODERS: {
+            uint8_t layer = data[1];
+            out[1]        = layer;
+            if (layer < encodermap_layer_count()) {
+                out[2] = NUM_ENCODERS;
+                for (uint8_t e = 0; e < NUM_ENCODERS; e++) {
+                    for (uint8_t cw = 0; cw < 2; cw++) {
+                        uint16_t kc             = keycode_at_encodermap_location(layer, e, cw);
+                        out[3 + 4 * e + 2 * cw] = kc & 0xFF;
+                        out[4 + 4 * e + 2 * cw] = kc >> 8;
+                    }
+                }
+            }
             break;
         }
         case HUD_BOOT:

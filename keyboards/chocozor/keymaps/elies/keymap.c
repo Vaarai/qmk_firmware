@@ -182,29 +182,12 @@ void pointing_device_init_user(void) {
     pointing_device_set_cpi(TRACKPAD_DEFAULT_DPI);
 }
 
-layer_state_t layer_state_set_user(layer_state_t state) {
-    SEND_STRING(SS_UP(X_LALT));
-    return state;
-}
-
-bool encoder_update_user(uint8_t index, bool clockwise) {
-    switch (get_highest_layer(layer_state)) {
-        case _ALPHA:
-            if (index == 0) { tap_code((clockwise ? KC_DOWN : KC_UP)); }
-            else if (index == 1) { tap_code((clockwise ? KC_RIGHT : KC_LEFT)); }
-            break;
-        case _NAV:
-        case _NUM:
-        case _ADJUST:
-        case _G0:
-        case _G1:
-            if (index == 0) { tap_code((clockwise ? KC_VOLU : KC_VOLD)); } 
-            else if (index == 1) {
-                /* - Hold Alt, it will be released at next layer switch in `layer_state_set_user()` */
-                SEND_STRING(SS_DOWN(X_LALT));
-                if (clockwise) { tap_code(KC_TAB); }
-                else { SEND_STRING(SS_DOWN(X_LSFT) SS_TAP(X_TAB) SS_UP(X_LSFT)); }
-            }
-    }
-    return false;
-}
+/* Knobs: index 0 is the left half's. */
+const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
+    [_ALPHA]  = { ENCODER_CCW_CW(MS_WHLU, MS_WHLD),      ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
+    [_NAV]    = { ENCODER_CCW_CW(_______, _______),      ENCODER_CCW_CW(G(KC_LEFT), G(KC_RIGHT)) },
+    [_NUM]    = { ENCODER_CCW_CW(C(DV_MINS), C(DV_EQL)), ENCODER_CCW_CW(_______, _______) },
+    [_ADJUST] = { ENCODER_CCW_CW(_______, _______),      ENCODER_CCW_CW(_______, _______) },
+    [_G0]     = { ENCODER_CCW_CW(_______, _______),      ENCODER_CCW_CW(_______, _______) },
+    [_G1]     = { ENCODER_CCW_CW(_______, _______),      ENCODER_CCW_CW(_______, _______) },
+};
