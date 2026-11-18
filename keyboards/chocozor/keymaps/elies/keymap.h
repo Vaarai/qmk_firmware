@@ -24,6 +24,7 @@
 
 /* Layers definitions */
 enum layers { _ALPHA, _NAV, _NUM, _ADJUST, _G0, _G1 };
+_Static_assert(_NAV == TRACKPAD_SCROLL_LAYER, "config.h: TRACKPAD_SCROLL_LAYER must be _NAV");
 
 /* - Custom Keycodes (CK_xxx) */
 

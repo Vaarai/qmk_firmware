@@ -1,10 +1,9 @@
-SRC += tap_dances.c
+SRC += keyboards/chocozor/common/tap_dances.c
 
 AUTOCORRECT_ENABLE = yes
 MOUSEKEY_ENABLE = yes
 CAPS_WORD_ENABLE = yes
 TAP_DANCE_ENABLE = yes
 
-# Cirque Trackpad I²C configuration
-POINTING_DEVICE_ENABLE = yes
-POINTING_DEVICE_DRIVER = cirque_pinnacle_i2c
+# Trackpad: the shared driver (common/trackpad.c), bus from the revision
+include keyboards/chocozor/common/trackpad.mk

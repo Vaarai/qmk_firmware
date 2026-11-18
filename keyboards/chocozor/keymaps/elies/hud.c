@@ -9,7 +9,7 @@
  *   [HUD_ENCODERS, layer]       answered by [HUD_ENCODERS, layer, count,
  *                               (ccw, cw) keycode pairs (u16 LE)...]
  *   [HUD_TOUCH]                 answered by [HUD_TOUCH, x, y, z, touching], the
- *                               pad's last touch (trackpad.h), when this half
+ *                               pad's last touch (common/trackpad.h), when this half
  *                               has the pad
  *   [HUD_BOOT, 'B', 'O', 'O', 'T'] reboots into the bootloader (flash.py)
  * Board -> host, on any change while the stream is on:
@@ -22,7 +22,7 @@
 #include QMK_KEYBOARD_H
 #include "raw_hid.h"
 #include "keymap_introspection.h"
-#include "trackpad.h"
+#include "../../common/trackpad.h"
 
 enum { HUD_HELLO = 1, HUD_KEYMAP = 2, HUD_STATE = 3, HUD_BOOT = 4, HUD_ENCODERS = 5, HUD_TOUCH = 6 };
 

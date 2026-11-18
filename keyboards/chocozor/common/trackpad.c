@@ -8,11 +8,11 @@
  *   instead makes a double click, so the cursor holds still during that second
  *   touch until it moves or lasts too long for a tap
  * - tap in the top-right corner: right click; top-left corner: middle click
- * Holding NAV turns motion into scrolling (pointing_device_task_user). */
-/* Shared copy of keymaps/elies/trackpad.c (Aetherall), used by fire_v2_9 over SPI. */
+ * Holding NAV (TRACKPAD_SCROLL_LAYER, config.h) turns motion into scrolling
+ * (pointing_device_task_user). Bus-agnostic: common/trackpad.mk links the
+ * Cirque core over I2C or SPI. */
 
 #include QMK_KEYBOARD_H
-#include "keymap.h"
 #include "trackpad.h"
 
 #define TP_TAP_TERM 180 /* ms: longer touches aren't taps */
@@ -151,7 +151,7 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
 
 report_mouse_t pointing_device_task_user(report_mouse_t report) {
     static int16_t sx, sy;
-    if (!layer_state_is(_NAV)) {
+    if (!layer_state_is(TRACKPAD_SCROLL_LAYER)) {
         sx = sy = 0;
         return report;
     }

@@ -22,18 +22,14 @@
 #define SPLIT_LED_STATE_ENABLE
 #define SPLIT_MODS_ENABLE
 
-#define SPI_DRIVER SPID0
-#define SPI_SCK_PIN  GP6
-#define SPI_MOSI_PIN GP3
-#define SPI_MISO_PIN GP4
-// Trackpad chip select
-#define POINTING_DEVICE_CS_PIN GP5
-// Cirque config
-#define SPLIT_POINTING_ENABLE 
+/* Trackpad: a 40 mm Cirque Pinnacle on the right half, driven by
+ * common/trackpad.c (common/trackpad.mk); its bus is set per revision. */
+#define SPLIT_POINTING_ENABLE
 #define POINTING_DEVICE_RIGHT
 #define CIRQUE_PINNACLE_DIAMETER_MM 40
-#define CIRQUE_PINNACLE_POSITION_MODE CIRQUE_PINNACLE_RELATIVE_MODE
 #define CIRQUE_PINNACLE_ATTENUATION EXTREG__TRACK_ADCCONFIG__ADC_ATTENUATE_4X
-#define CIRQUE_PINNACLE_TAP_ENABLE
-#define CIRQUE_PINNACLE_SECONDARY_TAP_ENABLE
-#define POINTING_DEVICE_GESTURES_SCROLL_ENABLE
+/* Absolute mode: the taps are ours (trackpad.c), not the chip's */
+#define CIRQUE_PINNACLE_POSITION_MODE CIRQUE_PINNACLE_ABSOLUTE_MODE
+#define POINTING_DEVICE_GESTURES_CURSOR_GLIDE_ENABLE
+/* Holding this layer turns trackpad motion into scrolling (_NAV) */
+#define TRACKPAD_SCROLL_LAYER 1

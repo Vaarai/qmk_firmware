@@ -16,8 +16,8 @@
 
 #include QMK_KEYBOARD_H
 
-#include "./keymap.h"
-#include "./tap_dances.h"
+#include "../../common/keymap.h"
+#include "../../common/tap_dances.h"
 
 #ifdef RGB_MATRIX_ENABLE
 uint16_t check_rgblight_timer = 0;
