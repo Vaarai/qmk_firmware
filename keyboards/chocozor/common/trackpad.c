@@ -1,0 +1,149 @@
+/* Trackpad: the Cirque Pinnacle in absolute mode, with our own gestures since
+ * neither the chip nor QMK's driver has tap-and-drag. This is the pointing
+ * device driver, so it runs on the right half, where the pad is.
+ *
+ * - one finger moves the cursor, and a flick glides on (QMK's cursor glide)
+ * - tap: left click. The button stays down for TP_DRAG_GAP after the tap, so
+ *   touching again in that time drags until the finger lifts; tapping again
+ *   instead makes a double click
+ * - tap in the top-right corner: right click; top-left corner: middle click
+ * Holding NAV turns motion into scrolling (pointing_device_task_user). */
+/* Shared copy of keymaps/elies/trackpad.c (Aetherall), used by fire_v2_9 over SPI. */
+
+#include QMK_KEYBOARD_H
+#include "keymap.h"
+#include "trackpad.h"
+
+#define TP_TAP_TERM 180 /* ms: longer touches aren't taps */
+#define TP_TAP_SLOP 10  /* pad units: taps move less than this */
+#define TP_DRAG_GAP 220 /* ms: a touch this soon after a tap drags */
+#define TP_CORNER 72    /* pad units: size of the corners that right and middle click */
+#define TP_SCROLL_DIV 24 /* cursor counts per scroll step with NAV held */
+
+#define TP_BUTTONS (MOUSE_BTN1 | MOUSE_BTN2 | MOUSE_BTN3)
+
+static struct {
+    bool     touching;
+    bool     tapped; /* a tap's left button is down, waiting for TP_DRAG_GAP */
+    bool     drag;   /* this touch started while tapped */
+    uint16_t since;  /* touch start, or tap end while tapped */
+    uint8_t  x0, y0, travel;
+    uint16_t sx, sy; /* last scaled position */
+    uint8_t  held;   /* buttons down until we let go */
+    uint8_t  flash;  /* buttons to press for the next report only */
+} tp;
+
+static trackpad_touch_t       last;
+static cursor_glide_context_t glide = {.config = {.coef = 102, .interval = 10, .trigger_px = 10}};
+
+trackpad_touch_t trackpad_last_touch(void) {
+    return last;
+}
+
+static uint8_t pad_unit(uint16_t v, uint16_t lower, uint16_t range) {
+    v = v < lower ? 0 : v - lower;
+    return (v > range ? range : v) * 255UL / range;
+}
+
+static uint8_t corner_button(uint8_t x, uint8_t y) {
+    if (y > TP_CORNER) {
+        return 0;
+    }
+    return x >= 255 - TP_CORNER ? MOUSE_BTN2 : x <= TP_CORNER ? MOUSE_BTN3 : 0;
+}
+
+bool pointing_device_driver_init(void) {
+    return cirque_pinnacle_init();
+}
+
+uint16_t pointing_device_driver_get_cpi(void) {
+    return cirque_pinnacle_get_cpi();
+}
+
+void pointing_device_driver_set_cpi(uint16_t cpi) {
+    cirque_pinnacle_set_cpi(cpi);
+}
+
+report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
+    uint8_t         flash = tp.flash;
+    pinnacle_data_t d     = cirque_pinnacle_read_data();
+    cursor_glide_t  glided = cursor_glide_check(&glide);
+    int16_t         dx = 0, dy = 0;
+    tp.flash               = 0;
+
+    if (tp.tapped && !tp.touching && timer_elapsed(tp.since) > TP_DRAG_GAP) {
+        tp.tapped = false;
+        tp.held &= ~MOUSE_BTN1;
+    }
+
+    if (d.valid && d.touchDown) {
+        uint8_t ux = pad_unit(d.xValue, CIRQUE_PINNACLE_X_LOWER, CIRQUE_PINNACLE_X_RANGE);
+        uint8_t uy = pad_unit(d.yValue, CIRQUE_PINNACLE_Y_LOWER, CIRQUE_PINNACLE_Y_RANGE);
+        last       = (trackpad_touch_t){ux, uy, d.zValue, true};
+        cirque_pinnacle_scale_data(&d, cirque_pinnacle_get_scale(), cirque_pinnacle_get_scale());
+        if (!tp.touching) {
+            tp.touching = true;
+            tp.drag     = tp.tapped;
+            tp.tapped   = false;
+            tp.since    = timer_read();
+            tp.x0       = ux;
+            tp.y0       = uy;
+            tp.travel   = 0;
+        } else {
+            dx = d.xValue - tp.sx;
+            dy = d.yValue - tp.sy;
+            uint8_t far = MAX(abs(ux - tp.x0), abs(uy - tp.y0));
+            tp.travel   = MAX(tp.travel, far);
+        }
+        tp.sx = d.xValue;
+        tp.sy = d.yValue;
+        cursor_glide_update(&glide, CONSTRAIN_HID_XY(dx), CONSTRAIN_HID_XY(dy), d.zValue);
+    } else if (d.valid && tp.touching) {
+        bool tap    = timer_elapsed(tp.since) < TP_TAP_TERM && tp.travel < TP_TAP_SLOP;
+        tp.touching = false;
+        last.touching = false;
+        if (tp.drag) {
+            tp.held &= ~MOUSE_BTN1;
+            if (tap) {
+                tp.flash = MOUSE_BTN1;
+            }
+        } else if (tap && corner_button(tp.x0, tp.y0)) {
+            flash |= corner_button(tp.x0, tp.y0);
+        } else if (tap) {
+            tp.held |= MOUSE_BTN1;
+            tp.tapped = true;
+            tp.since  = timer_read();
+        }
+        if (!tap) {
+            glided = cursor_glide_start(&glide);
+        } else {
+            cursor_glide_update(&glide, 0, 0, 0);
+            glided.valid = false;
+        }
+    }
+    if (!tp.touching && glided.valid) {
+        dx = glided.dx;
+        dy = glided.dy;
+    }
+
+    report.x       = CONSTRAIN_HID_XY(dx);
+    report.y       = CONSTRAIN_HID_XY(dy);
+    report.buttons = (report.buttons & ~TP_BUTTONS) | tp.held | flash;
+    return report;
+}
+
+report_mouse_t pointing_device_task_user(report_mouse_t report) {
+    static int16_t sx, sy;
+    if (!layer_state_is(_NAV)) {
+        sx = sy = 0;
+        return report;
+    }
+    sx += report.x;
+    sy += report.y;
+    report.h = sx / TP_SCROLL_DIV;
+    report.v = -(sy / TP_SCROLL_DIV);
+    sx -= report.h * TP_SCROLL_DIV;
+    sy += report.v * TP_SCROLL_DIV;
+    report.x = report.y = 0;
+    return report;
+}
