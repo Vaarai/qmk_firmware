@@ -1,4 +1,8 @@
 SRC += keyboards/chocozor/common/tap_dances.c
+SRC += keyboards/chocozor/common/accents.c
+
+# Detect the host OS to type accents the right way (see common/accents.c)
+OS_DETECTION_ENABLE = yes
 
 AUTOCORRECT_ENABLE = yes
 MOUSEKEY_ENABLE = yes

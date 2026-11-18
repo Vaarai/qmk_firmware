@@ -33,6 +33,7 @@ typedef enum user_custom_keycodes_t {
     CK_RKJMP = SAFE_RANGE, /* Warframe rocket/bullet jump */
     CK_DPII,
     CK_DPID,
+    CK_OSMD, /* Cycle accent OS mode: AUTO -> LINUX -> WINDOWS */
 } user_custom_keycodes_t;
 
 /* - Accent letter using Alt + Numpad numbers */

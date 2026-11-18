@@ -18,6 +18,7 @@
 
 #include "../../common/keymap.h"
 #include "../../common/tap_dances.h"
+#include "../../common/accents.h"
 
 #include "solenoid.h"
 
@@ -80,7 +81,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       _______,    KC_1,    KC_2,    KC_3,    KC_4,    KC_5,                         KC_6,    KC_7,    KC_8,    KC_9,    KC_0, _______,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, AC_TOGG,                        KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,
+      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, CK_OSMD, AC_TOGG,                        KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       XXXXXXX, UG_TOGG, UG_HUEU, UG_VALU, CK_DPII, XXXXXXX,                        KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
@@ -127,13 +128,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 };
 
-#define send_string_mod_shift(min, maj) if((get_mods() & MOD_MASK_SHIFT)!=0) \
-                                        { \
-                                            del_mods(MOD_MASK_SHIFT); \
-                                            SEND_STRING(maj); \
-                                        } else { \
-                                            SEND_STRING(min); \
-                                        }
+void keyboard_post_init_user(void) {
+    accents_init();
+}
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
@@ -157,6 +154,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     pointing_device_set_cpi(pointing_device_get_cpi()-100);
                 }
                 return false;
+            case CK_OSMD: /* Cycle accent OS mode */
+                if (record->event.pressed) {
+                    os_mode_cycle();
+                }
+                return false;
         }
     }
 
@@ -168,31 +170,31 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case KC_A:
                 switch (accent_state) {
                     case ACCENT_LEFT:
-                        send_string_mod_shift(SS_ACCENT_MIN_A_GRAVE, SS_ACCENT_MAJ_A_GRAVE);
+                        send_accent(ACC_A_GRAVE);
                         break;
                     case ACCENT_RIGHT:
-                        send_string_mod_shift(SS_ACCENT_MIN_A_CIRCU, SS_ACCENT_MAJ_A_CIRCU);
+                        send_accent(ACC_A_CIRCU);
                         break;
                     default:
                         break;
                 }
                 break;
             case KC_C:
-                send_string_mod_shift(SS_ACCENT_MIN_C_CEDIL, SS_ACCENT_MAJ_C_CEDIL);
+                send_accent(ACC_C_CEDIL);
                 break;
             case KC_E:
                 switch (accent_state) {
                     case ACCENT_LEFT:
-                        send_string_mod_shift(SS_ACCENT_MIN_E_ACUTE, SS_ACCENT_MAJ_E_ACUTE);
+                        send_accent(ACC_E_ACUTE);
                         break;
                     case ACCENT_RIGHT:
-                        send_string_mod_shift(SS_ACCENT_MIN_E_GRAVE, SS_ACCENT_MAJ_E_GRAVE);
+                        send_accent(ACC_E_GRAVE);
                         break;
                     case ACCENT_SUPER_LEFT:
-                        send_string_mod_shift(SS_ACCENT_MIN_E_CIRCU, SS_ACCENT_MAJ_E_CIRCU);
+                        send_accent(ACC_E_CIRCU);
                         break;
                     case ACCENT_SUPER_RIGHT:
-                        send_string_mod_shift(SS_ACCENT_EURO, SS_ACCENT_EURO);
+                        send_accent(ACC_EURO);
                         break;
                     default:
                         break;
@@ -201,10 +203,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case KC_I:
                 switch (accent_state) {
                     case ACCENT_LEFT:
-                        send_string_mod_shift(SS_ACCENT_MIN_I_TREMA, SS_ACCENT_MAJ_I_TREMA);
+                        send_accent(ACC_I_TREMA);
                         break;
                     case ACCENT_RIGHT:
-                        send_string_mod_shift(SS_ACCENT_MIN_I_CIRCU, SS_ACCENT_MAJ_I_CIRCU);
+                        send_accent(ACC_I_CIRCU);
                         break;
                     default:
                         break;
@@ -213,10 +215,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case KC_O:
                 switch (accent_state) {
                     case ACCENT_LEFT:
-                        send_string_mod_shift(SS_ACCENT_MIN_O_TREMA, SS_ACCENT_MAJ_O_TREMA);
+                        send_accent(ACC_O_TREMA);
                         break;
                     case ACCENT_RIGHT:
-                        send_string_mod_shift(SS_ACCENT_MIN_O_CIRCU, SS_ACCENT_MAJ_O_CIRCU);
+                        send_accent(ACC_O_CIRCU);
                         break;
                     default:
                         break;
@@ -225,10 +227,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case KC_U:
                 switch (accent_state) {
                     case ACCENT_LEFT:
-                        send_string_mod_shift(SS_ACCENT_MIN_U_GRAVE, SS_ACCENT_MAJ_U_GRAVE);
+                        send_accent(ACC_U_GRAVE);
                         break;
                     case ACCENT_RIGHT:
-                        send_string_mod_shift(SS_ACCENT_MIN_U_CIRCU, SS_ACCENT_MAJ_U_CIRCU);
+                        send_accent(ACC_U_CIRCU);
                         break;
                     default:
                         break;
@@ -269,6 +271,10 @@ bool oled_task_user(void) {
     /* Clear DPI display */
     oled_set_cursor(0, 13);
     oled_write_ln(dpi_string, 0);
+
+    /* Print how accents are typed (the USB half knows the host) */
+    oled_set_cursor(0, 10);
+    oled_write_ln(is_keyboard_master() ? os_mode_label() : "", 0);
 
     /* Print layer status */
     oled_set_cursor(0, 7);
