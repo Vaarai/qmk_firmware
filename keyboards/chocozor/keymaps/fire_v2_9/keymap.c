@@ -38,7 +38,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       KC_LCTL,    KC_X,    KC_K,    KC_C,    KC_W,    KC_Z,                         KC_B,    KC_M, KC_QUOT, KC_SCLN,  KC_DOT, KC_RCTL,
   //|--------+--------+--------+--------+--------+--------'                    `--------+--------+--------+--------+--------+--------|
-                        MS_WHLD, XXXXXXX, MS_WHLU,                                        MS_BTN1, MS_BTN3, MS_BTN2,
+                        XXXXXXX, KC_LGUI, XXXXXXX,                                        XXXXXXX, KC_RGUI, XXXXXXX,
   //                  `--------+--------+--------+-----------------`  '-----------------+--------+--------+--------'
                         TD(TD_SFT_CAPSW), TD(TD_NAV_ACCENT), KC_SPC,   KC_ENT, TD(TD_NUM_ACCENT), TD(TD_SFT_CAPSW)
   //                  `-----------------+------------------+-------'  `------+------------------+------------------'
@@ -48,7 +48,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       _______,    KC_1,    KC_2,    KC_3,    KC_4,    KC_5,                         KC_6,    KC_7,    KC_8,    KC_9,    KC_0, _______,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-       QK_RBT, G(KC_L), XXXXXXX, XXXXXXX, C(KC_A), XXXXXXX,                      MS_BTN1, MS_BTN2, MS_BTN3, XXXXXXX, XXXXXXX, _______,
+       QK_RBT, G(KC_L), XXXXXXX, XXXXXXX, C(KC_A), XXXXXXX,                      LSG(KC_COMM),G(KC_LEFT),G(KC_DOWN),G(KC_UP),G(KC_RIGHT),_______,
   //|--------+--------+ GUI V  +--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       _______, C(KC_X), G(KC_V), C(KC_V), C(KC_C), C(KC_Z),                      MS_WHLU, KC_LEFT, KC_DOWN,   KC_UP,KC_RIGHT, _______,
   //|ALT LEFT+--------+ ALT SFT+scrnshot+--------+--------|                    |--------+--------+--------+--------+--------+--------|
