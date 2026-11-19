@@ -35,6 +35,7 @@ _Static_assert(_NAV == TRACKPAD_SCROLL_LAYER, "config.h: TRACKPAD_SCROLL_LAYER m
 #define HRM_T RGUI_T(DV_T)
 #define HRM_N LALT_T(DV_N)
 #define HRM_S RCTL_T(DV_S)
+#define HRM_SCLN LCTL_T(DV_SCLN)
 #define CK_SELL LSFT(LCTL(KC_LEFT))
 #define CK_SELR LSFT(LCTL(KC_RIGHT))
 
