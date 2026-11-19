@@ -58,11 +58,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [_ADJUST] = LAYOUT_split_3x6_4(
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                        KC_F1, TO(_G0),   KC_F3,   KC_F4,   KC_F5,   KC_F6,
+      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                      XXXXXXX, TO(_G0), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      XXXXXXX, UG_TOGG, UG_HUEU, UG_VALU, CK_DPII, XXXXXXX,                        KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,
+        KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,                        KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,
   //|--------+--------+--------+--------+--------|--------|                    |--------+--------+--------+--------+--------+--------|
-      XXXXXXX, UG_NEXT, UG_HUED, UG_VALD, CK_DPID, XXXXXXX,                      XXXXXXX,   KC_F2, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+      XXXXXXX, UG_TOGG, UG_HUED, UG_VALD, CK_DPID, XXXXXXX,                      XXXXXXX, CK_DPII, UG_VALU, UG_HUEU, UG_NEXT, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
                                  _______, _______, _______, _______,    _______, _______, _______, _______
                              //`-----------------------------------'  `-----------------------------------'
