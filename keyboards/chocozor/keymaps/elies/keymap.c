@@ -95,6 +95,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 };
 
+/* A layer key is never a same-hand roll: a home row mod held through it can
+ * still become a hold, for shortcuts across layers like Gui + NAV + arrow. */
+bool get_chordal_hold(uint16_t tap_hold_keycode, keyrecord_t *tap_hold_record, uint16_t other_keycode, keyrecord_t *other_record) {
+    if (IS_QK_MOMENTARY(other_keycode)) {
+        return true;
+    }
+    return get_chordal_hold_default(tap_hold_record, other_record);
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     
     if(IS_USER_KEYCODE(keycode))
