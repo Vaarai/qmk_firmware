@@ -39,7 +39,6 @@ _Static_assert(_NAV == TRACKPAD_SCROLL_LAYER, "config.h: TRACKPAD_SCROLL_LAYER m
 #define CK_SELR LSFT(LCTL(KC_RIGHT))
 
 typedef enum user_custom_keycodes_t {
-    CK_RKJMP = SAFE_RANGE, /* Warframe rocket/bullet jump */
-    CK_DPII,
+    CK_DPII = SAFE_RANGE,
     CK_DPID,
 } user_custom_keycodes_t;

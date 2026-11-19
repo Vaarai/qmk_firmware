@@ -58,17 +58,17 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [_ADJUST] = LAYOUT_split_3x6_4(
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                        KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,
+      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                        KC_F1, TO(_G0),   KC_F3,   KC_F4,   KC_F5,   KC_F6,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       XXXXXXX, UG_TOGG, UG_HUEU, UG_VALU, CK_DPII, XXXXXXX,                        KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,
   //|--------+--------+--------+--------+--------|--------|                    |--------+--------+--------+--------+--------+--------|
-      XXXXXXX, UG_NEXT, UG_HUED, UG_VALD, CK_DPID, XXXXXXX,                      TO(_G0), TO(_G1), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+      XXXXXXX, UG_NEXT, UG_HUED, UG_VALD, CK_DPID, XXXXXXX,                      XXXXXXX,   KC_F2, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
                                  _______, _______, _______, _______,    _______, _______, _______, _______
                              //`-----------------------------------'  `-----------------------------------'
   ),
 
-  /* Generic game */
+  /* Game, physical keys: for games that read key positions (QWERTY labels) */
     [_G0] = LAYOUT_split_3x6_4(
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
        KC_ESC,  KC_TAB,    KC_1,    KC_2,    KC_3,    KC_R,                         KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,
@@ -77,20 +77,20 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       KC_LCTL,    KC_Z,    KC_X,    KC_S,    KC_C,    KC_F,                         KC_B,    KC_N,    KC_M, KC_COMM,  KC_DOT, KC_SLSH,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
-                                    KC_4,  KC_SPC,    KC_V,    KC_G,    XXXXXXX, TG(_G0), XXXXXXX, _______
+                                    KC_4,  KC_SPC,    KC_V,    KC_G,    XXXXXXX, TG(_G0), TO(_G1), _______
                              //`-----------------------------------'  `-----------------------------------'
   ),
 
-  /* Warframe */
+  /* Game, logical keys: the same keys as us(dvorak) types them, for games that read characters */
     [_G1] = LAYOUT_split_3x6_4(
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-       KC_TAB,  KC_ESC,    KC_Q,    KC_W,    KC_1,    KC_2,                      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+       KC_ESC,  KC_TAB,    DV_1,    DV_2,    DV_3,    DV_R,                         DV_F,    DV_G,    DV_C,    DV_R,    DV_L, DV_SLSH,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-         KC_F, KC_LSFT,    KC_A,    KC_S,    KC_D,    KC_3,                      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+      KC_LSFT,    DV_Q,    DV_A,    DV_W,    DV_D,    DV_E,                         DV_D,    DV_H,    DV_T,    DV_N,    DV_S, DV_MINS,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      KC_LGUI, KC_LCTL,    KC_M,    KC_Y,    KC_X,    KC_4,                      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+      KC_LCTL,    DV_Z,    DV_X,    DV_S,    DV_C,    DV_F,                         DV_B,    DV_M,    DV_W,    DV_V,    DV_Z, KC_RSFT,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
-                                  _______, KC_SPC,CK_RKJMP,    KC_5,    XXXXXXX, TG(_G1), XXXXXXX, _______
+                                    DV_4,  KC_SPC,    DV_V,    DV_G,    XXXXXXX, TG(_G1), TO(_G0), _______
                              //`-----------------------------------'  `-----------------------------------'
   ),
 };
@@ -100,13 +100,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if(IS_USER_KEYCODE(keycode))
     {
         switch (keycode) {
-            case CK_RKJMP: /* Warframe rocket jump */
-                if (record->event.pressed) {
-                    SEND_STRING(SS_DOWN(X_C));
-                } else {
-                    SEND_STRING(SS_DOWN(X_SPC) SS_DELAY(50) SS_UP(X_C) SS_DELAY(50) SS_UP(X_SPC));
-                }
-                return false;
             case CK_DPII: /* Increase trackpad DPI */
                 if (record->event.pressed) {
                     pointing_device_set_cpi(pointing_device_get_cpi()+100);
@@ -168,10 +161,10 @@ bool oled_task_user(void) {
             oled_write_ln(dpi_string, 0);
             break;
         case _G0:
-            oled_write_ln("GAME0", 0);
+            oled_write_ln("GAMEq", 0);
             break;
         case _G1:
-            oled_write_ln("GAME1", 0);
+            oled_write_ln("GAMEd", 0);
             break;
     }
 
