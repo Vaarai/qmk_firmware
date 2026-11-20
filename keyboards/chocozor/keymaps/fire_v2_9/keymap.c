@@ -259,49 +259,54 @@ bool shutdown_user(bool jump_to_bootloader) {
 }
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
-    return OLED_ROTATION_270;
+    /* Landscape on both halves (left 128x64, right 128x32, see v2_9/v2_9.c) */
+    return OLED_ROTATION_180;
 }
 
-bool oled_task_user(void) {
-    char dpi_string[6] = {0};
+/* Write text at (col, line), padded with spaces to width, centred if asked */
+static void oled_write_field(uint8_t col, uint8_t line, uint8_t width, const char *text, bool center) {
+    char   buf[22];
+    size_t len = strlen(text);
+    if (width > sizeof(buf) - 1) width = sizeof(buf) - 1;
+    if (len > width) len = width;
+    uint8_t pad = center ? (width - len) / 2 : 0;
+    memset(buf, ' ', width);
+    memcpy(buf + pad, text, len);
+    buf[width] = '\0';
+    oled_set_cursor(col, line);
+    oled_write(buf, false);
+}
 
-    /* Print cornia logo */
+/* Layer names, 3 letters on both screens */
+static const char *layer_label(void) {
+    switch (get_highest_layer(layer_state)) {
+        case _ALPHA:  return "ABC";
+        case _NAV:    return "NAV";
+        case _NUM:    return "NUM";
+        case _ADJUST: return "ADJ";
+        case _G0:     return "GM0";
+        case _G1:     return "GM1";
+        default:      return "???";
+    }
+}
+
+/* Landscape, 21 columns: logo in columns 0-5, text from column 6 on the
+ * logo's 4 lines (centred vertically on the taller left screen)
+ *   +0  layer               +2  DPI (ADJUST)
+ *   +1  LNX / WIN (USB half) +3  (empty) */
+bool oled_task_user(void) {
+    uint8_t top = chocozor_logo_top();
+    char    dpi[16] = "";
+
     chocozor_render_logo();
 
-    /* Clear DPI display */
-    oled_set_cursor(0, 13);
-    oled_write_ln(dpi_string, 0);
-
-    /* Print how accents are typed (the USB half knows the host) */
-    oled_set_cursor(0, 10);
-    oled_write_ln(is_keyboard_master() ? os_mode_label() : "", 0);
-
-    /* Print layer status */
-    oled_set_cursor(0, 7);
-    switch (get_highest_layer(layer_state)) {
-        case _ALPHA:
-            oled_write_ln("ABCDE", 0);
-            break;
-        case _NAV:
-            oled_write_ln("<--->", 0);
-            break;
-        case _NUM:
-            oled_write_ln("!0@*8", 0);
-            break;
-        case _ADJUST:
-            oled_write_ln("00000", 0);
-            /* Print DPI value */
-            snprintf(dpi_string, 6, "%5d", pointing_device_get_cpi());
-            oled_set_cursor(0, 13);
-            oled_write_ln(dpi_string, 0);
-            break;
-        case _G0:
-            oled_write_ln("GAME0", 0);
-            break;
-        case _G1:
-            oled_write_ln("GAME1", 0);
-            break;
+    if (get_highest_layer(layer_state) == _ADJUST) {
+        snprintf(dpi, sizeof(dpi), "DPI %u", pointing_device_get_cpi());
     }
+    oled_write_field(6, top + 0, 15, layer_label(), false);
+    oled_write_field(6, top + 1, 15, os_mode_label(), false);
+    oled_write_field(6, top + 2, 15, dpi, false);
+    oled_write_field(6, top + 3, 15, "", false);
 
     return false;
 }
@@ -352,7 +357,8 @@ bool apply_autocorrect(uint8_t backspaces, const char *str, char *typo, char *co
     return true;
 }
 
-void housekeeping_task_kb(void) {
+void housekeeping_task_user(void) {
+    accents_sync_task();
     #ifdef RGB_MATRIX_ENABLE
     /* Reset RGB Matrix autocorrect indicator */
     if (previous_rgb_matrix_mode != RGB_MATRIX_NONE && timer_elapsed(check_rgblight_timer) > 200) {

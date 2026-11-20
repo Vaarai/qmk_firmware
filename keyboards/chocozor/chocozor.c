@@ -16,6 +16,18 @@
 
 #include QMK_KEYBOARD_H
 
+#ifdef OLED_ENABLE
+/* Text lines the screen shows; a revision whose halves differ overrides it */
+__attribute__((weak)) uint8_t chocozor_oled_lines(void) {
+    return oled_max_lines();
+}
+
+/* First text line of the 4-line logo band, in landscape */
+uint8_t chocozor_logo_top(void) {
+    return (chocozor_oled_lines() - 4) / 2;
+}
+#endif
+
 // 'Cornia', 32x32px
 #define OLED_LOGO_CORNIA {\
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, \
@@ -33,10 +45,23 @@
     0xab, 0xac, 0xad, 0xae, 0xaf, 0xb0, 0xb1, 0xb2, 0xb3, 0xb4, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, \
     0xc6, 0xc7, 0xc8, 0xc9, 0xca, 0xcb, 0xcc, 0xcd, 0xce, 0xcf, 0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0x00}
 
+/* Draw the 32x32 logo: top of the screen in portrait, left edge and centred
+ * vertically in landscape (see chocozor_logo_top) */
 void chocozor_render_logo(void) {
 #ifdef OLED_ENABLE
     static const char PROGMEM logo[] = OLED_LOGO_CORNIA;
-    oled_write_raw_P(logo, sizeof(logo));
+    if (oled_max_chars() <= 5) {
+        /* Portrait: the buffer is 32 px wide, the logo fills its first 4 pages */
+        oled_write_raw_P(logo, sizeof(logo));
+        return;
+    }
+    /* Landscape: the logo's 4 pages of 32 columns go to x 0-31 */
+    uint8_t top = chocozor_logo_top();
+    for (uint8_t page = 0; page < 4; page++) {
+        for (uint8_t x = 0; x < 32; x++) {
+            oled_write_raw_byte(pgm_read_byte(&logo[page * 32 + x]), (top + page) * OLED_DISPLAY_WIDTH + x);
+        }
+    }
 #endif
 }
 

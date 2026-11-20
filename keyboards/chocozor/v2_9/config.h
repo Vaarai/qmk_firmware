@@ -23,6 +23,11 @@
 #define SPI_MISO_PIN GP4
 #define POINTING_DEVICE_CS_PIN GP5 // trackpad chip select
 
+// ============ Screens =============
+// Left 0.96" 128x64, right 0.91" 128x32 (M091-12832). One build for both:
+// sized for the left, the right half shrinks its screen at startup (v2_9.c).
+#define OLED_DISPLAY_128X64
+
 // ============ I²C config =============
 #define I2C_DRIVER I2CD0
 #define I2C1_SDA_PIN GP12

@@ -34,6 +34,10 @@ typedef enum {
 
 /* Load the saved OS mode (call from keyboard_post_init_user) */
 void accents_init(void);
+/* Split: the USB half sends the mode and detected OS to the other half, so
+ * os_mode_label() works on both (call from housekeeping_task_user; needs
+ * RPC_ID_USER_OS_SYNC in SPLIT_TRANSACTION_IDS_USER) */
+void accents_sync_task(void);
 /* Cycle AUTO -> LINUX -> WINDOWS and save it */
 void os_mode_cycle(void);
 os_mode_t os_mode_get(void);

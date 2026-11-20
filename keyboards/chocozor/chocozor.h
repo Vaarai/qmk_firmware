@@ -19,3 +19,7 @@
 #include "quantum.h"
 
 void chocozor_render_logo(void);
+/* Text lines the screen shows (weak: v2.9 halves differ) */
+uint8_t chocozor_oled_lines(void);
+/* Landscape: the line the logo (4 lines tall) starts on */
+uint8_t chocozor_logo_top(void);

@@ -11,6 +11,9 @@
 #include "keymap.h"
 #include "os_detection.h"
 #include "eeconfig.h"
+#ifdef SPLIT_KEYBOARD
+#    include "transactions.h"
+#endif
 
 /* Linux: Compose (Menu) + sequence from the default en_US.UTF-8 Compose table */
 #define SS_COMPOSE(seq) SS_TAP(X_APP) seq
@@ -58,6 +61,47 @@ static const accent_strings_t accents_linux[ACC_COUNT] = {
 
 static os_mode_t os_mode = OS_MODE_AUTO;
 
+/* Only the USB half detects the host: it sends the mode and the detected OS
+ * to the other half (RPC_ID_USER_OS_SYNC, the keymap's config.h), so both
+ * screens can show them. */
+static os_variant_t remote_os = OS_UNSURE;
+
+static os_variant_t host_os(void) {
+    return is_keyboard_master() ? detected_host_os() : remote_os;
+}
+
+#ifdef SPLIT_KEYBOARD
+typedef struct {
+    uint8_t mode;
+    uint8_t os;
+} os_sync_t;
+
+static void os_sync_rpc(uint8_t in_len, const void *in, uint8_t out_len, void *out) {
+    if (in_len >= sizeof(os_sync_t)) {
+        const os_sync_t *s = in;
+        os_mode            = s->mode < OS_MODE_COUNT ? (os_mode_t)s->mode : OS_MODE_AUTO;
+        remote_os          = (os_variant_t)s->os;
+    }
+}
+
+void accents_sync_task(void) {
+    static os_sync_t last;
+    static uint32_t  sent;
+    if (!is_keyboard_master()) {
+        return;
+    }
+    os_sync_t now = {os_mode, detected_host_os()};
+    if (memcmp(&now, &last, sizeof(now)) != 0 || timer_elapsed32(sent) > 1000) {
+        if (transaction_rpc_send(RPC_ID_USER_OS_SYNC, sizeof(now), &now)) {
+            last = now;
+            sent = timer_read32();
+        }
+    }
+}
+#else
+void accents_sync_task(void) {}
+#endif
+
 void accents_init(void) {
     uint32_t raw = eeconfig_read_user();
     if ((raw & OS_MODE_TAG_MASK) == OS_MODE_TAG && (raw & 0xFF) < OS_MODE_COUNT) {
@@ -65,6 +109,9 @@ void accents_init(void) {
     } else {
         os_mode = OS_MODE_AUTO;
     }
+#ifdef SPLIT_KEYBOARD
+    transaction_register_rpc(RPC_ID_USER_OS_SYNC, os_sync_rpc);
+#endif
 }
 
 void os_mode_cycle(void) {
@@ -84,7 +131,7 @@ bool os_is_linux(void) {
             return false;
         default:
             /* Unsure or macOS: keep the Windows codes, as before */
-            return detected_host_os() == OS_LINUX;
+            return host_os() == OS_LINUX;
     }
 }
 
