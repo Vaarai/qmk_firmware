@@ -19,6 +19,7 @@
 #include "../../common/keymap.h"
 #include "../../common/tap_dances.h"
 #include "../../common/accents.h"
+#include "../../common/pcstatus.h"
 
 #include "solenoid.h"
 
@@ -297,6 +298,19 @@ static const char *layer_label(void) {
 bool oled_task_user(void) {
     uint8_t top = chocozor_logo_top();
     char    dpi[16] = "";
+
+    /* Left screen: the PC status while the host helper sends it, else the
+     * same block as the right; clear when switching between the two */
+    static bool showing_status;
+    bool        status = is_keyboard_left() && pcstatus_active();
+    if (status != showing_status) {
+        oled_clear();
+        showing_status = status;
+    }
+    if (status) {
+        pcstatus_render();
+        return false;
+    }
 
     chocozor_render_logo();
 

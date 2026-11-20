@@ -1,5 +1,9 @@
 SRC += keyboards/chocozor/common/tap_dances.c
 SRC += keyboards/chocozor/common/accents.c
+SRC += keyboards/chocozor/common/pcstatus.c
+
+# PC status from the host over Raw HID, on the left screen (common/pcstatus.c)
+RAW_ENABLE = yes
 
 # Detect the host OS to type accents the right way (see common/accents.c)
 OS_DETECTION_ENABLE = yes
