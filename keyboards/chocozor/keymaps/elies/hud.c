@@ -15,6 +15,10 @@
  * Board -> host, on any change while the stream is on:
  *   [HUD_STATE, layer_state (u32 LE), default_layer_state (u32 LE), mods,
  *    oneshot mods, caps word, rows, one matrix row bitmask per row...]
+ * Board -> host, while the stream is on:
+ *   [HUD_KEY, keycode (u16 LE), mods, top layer, tap count]  each key press
+ *                               as processed, tap-holds settled, mods held
+ *   [HUD_DRILL]                 the drill key (CK_DRILL) was pressed
  *
  * Nothing is sent unless a host said hello recently: a report nobody reads
  * would stall the keyboard on its USB timeout. */
@@ -24,7 +28,7 @@
 #include "keymap_introspection.h"
 #include "../../common/trackpad.h"
 
-enum { HUD_HELLO = 1, HUD_KEYMAP = 2, HUD_STATE = 3, HUD_BOOT = 4, HUD_ENCODERS = 5, HUD_TOUCH = 6 };
+enum { HUD_HELLO = 1, HUD_KEYMAP = 2, HUD_STATE = 3, HUD_BOOT = 4, HUD_ENCODERS = 5, HUD_TOUCH = 6, HUD_KEY = 7, HUD_DRILL = 8 };
 
 #define HUD_REPORT 32
 #define HUD_ALIVE_MS 3000
@@ -106,6 +110,24 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
             return;
     }
     raw_hid_send(out, sizeof(out));
+}
+
+void hud_record(uint16_t keycode, keyrecord_t *record) {
+    if (!hud_alive || !record->event.pressed) {
+        return;
+    }
+    uint8_t out[HUD_REPORT] = {HUD_KEY, keycode & 0xFF, keycode >> 8};
+    out[3]                  = get_mods() | get_oneshot_mods();
+    out[4]                  = get_highest_layer(layer_state | default_layer_state);
+    out[5]                  = record->tap.count;
+    raw_hid_send(out, sizeof(out));
+}
+
+void hud_drill(void) {
+    if (hud_alive) {
+        uint8_t out[HUD_REPORT] = {HUD_DRILL};
+        raw_hid_send(out, sizeof(out));
+    }
 }
 
 void housekeeping_task_user(void) {

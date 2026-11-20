@@ -42,4 +42,9 @@ _Static_assert(_NAV == TRACKPAD_SCROLL_LAYER, "config.h: TRACKPAD_SCROLL_LAYER m
 typedef enum user_custom_keycodes_t {
     CK_DPII = SAFE_RANGE,
     CK_DPID,
+    CK_DRILL, /* starts or stops the keyhud drill */
 } user_custom_keycodes_t;
+
+/* hud.c */
+void hud_record(uint16_t keycode, keyrecord_t *record);
+void hud_drill(void);
