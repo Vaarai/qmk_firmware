@@ -193,7 +193,7 @@ void pointing_device_init_user(void) {
 /* Knobs: index 0 is the left half's. */
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [_ALPHA]  = { ENCODER_CCW_CW(MS_WHLU, MS_WHLD),      ENCODER_CCW_CW(KC_DOWN, KC_UP) },
-    [_NAV]    = { ENCODER_CCW_CW(_______, _______),      ENCODER_CCW_CW(G(KC_LEFT), G(KC_RIGHT)) },
+    [_NAV]    = { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT),      ENCODER_CCW_CW(G(KC_LEFT), G(KC_RIGHT)) },
     [_NUM]    = { ENCODER_CCW_CW(C(DV_MINS), C(DV_EQL)), ENCODER_CCW_CW(_______, _______) },
     [_ADJUST] = { ENCODER_CCW_CW(_______, _______),      ENCODER_CCW_CW(_______, _______) },
     [_G0]     = { ENCODER_CCW_CW(_______, _______),      ENCODER_CCW_CW(_______, _______) },
