@@ -11,11 +11,11 @@
  *   [5]  weekday (0 = Monday)  [6] day  [7] month
  *   [8]  CPU %  [9] RAM %  [10] CPU temp C  [11] GPU temp C
  *   [12-13] notifications, little endian
- * Other reports (e.g. the keyhud protocol, ids 1-6) are ignored.
+ * The keymap's raw_hid_receive passes reports on to pcstatus_receive, which
+ * ignores other ids (e.g. the keyhud protocol, ids 1-9, MAGIC pointing 'M').
  * The GPU line is off unless PCSTATUS_GPU is defined (config.h). */
 
 #include "pcstatus.h"
-#include "raw_hid.h"
 #include <stdio.h>
 
 #define PCSTATUS_CMD 'P'
@@ -34,9 +34,9 @@ static pcstatus_t status;
 static uint32_t   received_at;
 static bool       received;
 
-void raw_hid_receive(uint8_t *data, uint8_t length) {
+bool pcstatus_receive(const uint8_t *data, uint8_t length) {
     if (length < 14 || data[0] != PCSTATUS_CMD || data[1] != PCSTATUS_VERSION) {
-        return;
+        return false;
     }
     status = (pcstatus_t){
         .hour          = data[2],
@@ -53,6 +53,7 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
     };
     received_at = timer_read32();
     received    = true;
+    return true;
 }
 
 bool pcstatus_active(void) {

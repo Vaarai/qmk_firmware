@@ -22,6 +22,7 @@
 #include "../../common/pcstatus.h"
 #include "../../common/trackpad.h"
 
+#include "raw_hid.h"
 #include "solenoid.h"
 #include "transactions.h"
 
@@ -137,31 +138,34 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 /* MAGIC pointing (Manual And Gaze Input Cascaded, Zhai et al. 1999), after
- * the elies keymap: while on, F19 is held down while a finger rests on the pad,
- * and the host pulls the cursor to the gaze while it is down; moving or lifting
- * the finger releases it. CK_MAGIC (ADJUST) toggles it; off at power-up.
+ * the elies keymap: while on, F19 is held down while a finger rests on the pad
+ * (trackpad_rest_user: still for 60 ms, not a tap-drag), and the host pulls
+ * the cursor to the gaze while it is down; moving or lifting the finger
+ * releases it. CK_MAGIC (ADJUST) toggles it; off at power-up.
  *
- * A MAGIC touch clicks nothing, decided on the board alone: F19 only goes down
- * once the touch is too old to be a tap (the driver's 180 ms tap term), and
- * then trackpad_touch_no_clicks() drops its long press too. So a tap always
- * clicks where the cursor is, and the rest that jumps never clicks. The rest
- * starts 60 ms into a still touch (trackpad.c), so we wait MAGIC_REST_HOLD more.
+ * Clicks while on: a long press never right clicks. A tap clicks where the
+ * cursor is, unless the host moved the cursor during the touch: it then sends
+ * Raw HID report 'M' (raw_hid_receive), and the touch clicks nothing
+ * (trackpad_touch_no_clicks). Only a touch that rested with MAGIC on takes it.
  *
- * Split: the pad and its driver are on the right half, the keymap runs on the
- * USB half (the left one on this board). The USB half sends MAGIC to the pad's
- * half and reads back whether a MAGIC rest is on (RPC_ID_USER_MAGIC, config.h);
- * the other half also needs MAGIC for its screen. */
-#define MAGIC_REST_HOLD 120 /* ms after the rest starts: 60 + 120 = the tap term */
+ * Split: the pad and its driver are on the right half, the keymap and Raw HID
+ * on the USB half (the left one on this board). The USB half sends MAGIC and
+ * the host's 'M' to the pad's half and reads back whether a MAGIC rest is on
+ * (RPC_ID_USER_MAGIC, config.h); the other half also needs MAGIC for its
+ * screen. Request byte: MAGIC_REQ_ON | MAGIC_REQ_NO_CLICK; answer: F19 down. */
 #define MAGIC_POLL 10       /* ms between reads of a remote pad while MAGIC is on */
 #define MAGIC_RESEND 500    /* ms between sends of MAGIC to a pad-less half */
+#define MAGIC_CMD 'M'       /* Raw HID: the host moved the cursor during this touch */
+#define MAGIC_REQ_ON 0x01
+#define MAGIC_REQ_NO_CLICK 0x02
 
-static bool     magic_pointing; /* USB half: the toggle */
-static bool     magic_remote;   /* other half: the toggle as last sent */
-static bool     magic_down;     /* USB half: F19 is down */
-static bool     pad_resting;    /* pad half: between trackpad_rest_user(true) and (false) */
-static uint16_t pad_rest_at;
-static bool     pad_jump;       /* pad half: this rest holds F19 */
-static bool     pad_jump_remote; /* USB half: pad_jump of the other half */
+static bool magic_pointing;  /* USB half: the toggle */
+static bool magic_remote;    /* other half: the toggle as last sent */
+static bool magic_down;      /* USB half: F19 is down */
+static bool magic_no_click;  /* USB half: the host's 'M' waits to reach the pad */
+static bool pad_resting;     /* pad half: between trackpad_rest_user(true) and (false) */
+static bool pad_magic_touch; /* pad half: the current touch rested with MAGIC on */
+static bool pad_jump_remote; /* USB half: F19 wanted by the other half */
 
 static bool pad_here(void) {
     return !is_keyboard_left(); /* POINTING_DEVICE_RIGHT */
@@ -173,51 +177,80 @@ static bool magic_on(void) {
 
 void trackpad_rest_user(bool resting) {
     pad_resting = resting;
-    pad_rest_at = timer_read();
-    if (!resting) {
-        pad_jump = false;
+    if (resting && magic_on()) {
+        pad_magic_touch = true;
     }
 }
 
-/* Pad half: a rest that lasted past the tap term with MAGIC on holds F19 */
-static void magic_pad_task(void) {
-    if (!magic_on()) {
-        pad_jump = false;
-    } else if (pad_resting && !pad_jump && timer_elapsed(pad_rest_at) >= MAGIC_REST_HOLD) {
-        pad_jump = true;
+bool trackpad_long_press_user(void) {
+    return !magic_on();
+}
+
+/* Pad half */
+static bool pad_jump(void) {
+    return pad_resting && magic_on();
+}
+
+static void pad_no_click(void) {
+    if (pad_magic_touch && trackpad_last_touch().touching) {
         trackpad_touch_no_clicks();
+    }
+}
+
+static void magic_pad_task(void) {
+    if (!trackpad_last_touch().touching) {
+        pad_magic_touch = false;
     }
 }
 
 static void magic_rpc(uint8_t in_len, const void *in, uint8_t out_len, void *out) {
     if (in_len >= 1) {
-        magic_remote = *(const uint8_t *)in;
+        uint8_t req  = *(const uint8_t *)in;
+        magic_remote = req & MAGIC_REQ_ON;
+        if (req & MAGIC_REQ_NO_CLICK) {
+            pad_no_click();
+        }
     }
-    magic_pad_task();
     if (out_len >= 1) {
-        *(uint8_t *)out = pad_jump;
+        *(uint8_t *)out = pad_jump();
     }
 }
 
-/* USB half: keep the other half in step, press or release F19 */
+/* Raw HID, USB half: 'M' for MAGIC, 'P' for the PC status (common/pcstatus.c) */
+void raw_hid_receive(uint8_t *data, uint8_t length) {
+    if (length >= 1 && data[0] == MAGIC_CMD) {
+        magic_no_click = magic_pointing;
+        return;
+    }
+    pcstatus_receive(data, length);
+}
+
+/* USB half: keep the other half in step, pass on 'M' at once, press or
+ * release F19 */
 static void magic_task(void) {
     static bool     sent;
     static uint16_t sent_at;
     if (!is_keyboard_master()) {
         return;
     }
+    if (magic_no_click && pad_here()) {
+        pad_no_click();
+        magic_no_click = false;
+    }
     uint16_t period = pad_here() ? MAGIC_RESEND : MAGIC_POLL;
-    if (sent != magic_pointing || (magic_pointing && timer_elapsed(sent_at) >= period)) {
-        uint8_t in = magic_pointing, out = 0;
+    if (sent != magic_pointing || magic_no_click || (magic_pointing && timer_elapsed(sent_at) >= period)) {
+        uint8_t in  = (magic_pointing ? MAGIC_REQ_ON : 0) | (magic_no_click ? MAGIC_REQ_NO_CLICK : 0);
+        uint8_t out = 0;
         if (transaction_rpc_exec(RPC_ID_USER_MAGIC, sizeof(in), &in, sizeof(out), &out)) {
             sent            = magic_pointing;
+            magic_no_click  = false;
             pad_jump_remote = out;
         } else {
             pad_jump_remote = false;
         }
         sent_at = timer_read();
     }
-    bool down = magic_pointing && (pad_here() ? pad_jump : pad_jump_remote);
+    bool down = magic_pointing && (pad_here() ? pad_jump() : pad_jump_remote);
     if (down != magic_down) {
         if (down) {
             register_code(KC_F19);
@@ -263,6 +296,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case CK_MAGIC: /* MAGIC pointing on/off */
                 if (record->event.pressed) {
                     magic_pointing = !magic_pointing;
+                    magic_no_click = false;
                 }
                 return false;
         }
