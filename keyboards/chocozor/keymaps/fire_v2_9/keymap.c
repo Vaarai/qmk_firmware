@@ -20,8 +20,15 @@
 #include "../../common/tap_dances.h"
 #include "../../common/accents.h"
 #include "../../common/pcstatus.h"
+#include "../../common/trackpad.h"
 
 #include "solenoid.h"
+#include "transactions.h"
+
+/* Keymap-only keycodes, after the common ones (common/keymap.h) */
+enum {
+    CK_MAGIC = CK_OSMD + 1, /* MAGIC pointing on/off */
+};
 
 #ifdef RGB_MATRIX_ENABLE
 uint16_t check_rgblight_timer = 0;
@@ -84,7 +91,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, CK_OSMD, AC_TOGG,                        KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      XXXXXXX, UG_TOGG, UG_HUEU, UG_VALU, CK_DPII, XXXXXXX,                        KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,
+      XXXXXXX, UG_TOGG, UG_HUEU, UG_VALU, CK_DPII,CK_MAGIC,                        KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       XXXXXXX, UG_NEXT, UG_HUED, UG_VALD, CK_DPID, HF_TOGG,                      TO(_G0), TO(_G1), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------'                    `--------+--------+--------+--------+--------+--------|
@@ -129,8 +136,101 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 };
 
+/* MAGIC pointing (Manual And Gaze Input Cascaded, Zhai et al. 1999), after
+ * the elies keymap: while on, F19 is held down while a finger rests on the pad,
+ * and the host pulls the cursor to the gaze while it is down; moving or lifting
+ * the finger releases it. CK_MAGIC (ADJUST) toggles it; off at power-up.
+ *
+ * A MAGIC touch clicks nothing, decided on the board alone: F19 only goes down
+ * once the touch is too old to be a tap (the driver's 180 ms tap term), and
+ * then trackpad_touch_no_clicks() drops its long press too. So a tap always
+ * clicks where the cursor is, and the rest that jumps never clicks. The rest
+ * starts 60 ms into a still touch (trackpad.c), so we wait MAGIC_REST_HOLD more.
+ *
+ * Split: the pad and its driver are on the right half, the keymap runs on the
+ * USB half (the left one on this board). The USB half sends MAGIC to the pad's
+ * half and reads back whether a MAGIC rest is on (RPC_ID_USER_MAGIC, config.h);
+ * the other half also needs MAGIC for its screen. */
+#define MAGIC_REST_HOLD 120 /* ms after the rest starts: 60 + 120 = the tap term */
+#define MAGIC_POLL 10       /* ms between reads of a remote pad while MAGIC is on */
+#define MAGIC_RESEND 500    /* ms between sends of MAGIC to a pad-less half */
+
+static bool     magic_pointing; /* USB half: the toggle */
+static bool     magic_remote;   /* other half: the toggle as last sent */
+static bool     magic_down;     /* USB half: F19 is down */
+static bool     pad_resting;    /* pad half: between trackpad_rest_user(true) and (false) */
+static uint16_t pad_rest_at;
+static bool     pad_jump;       /* pad half: this rest holds F19 */
+static bool     pad_jump_remote; /* USB half: pad_jump of the other half */
+
+static bool pad_here(void) {
+    return !is_keyboard_left(); /* POINTING_DEVICE_RIGHT */
+}
+
+static bool magic_on(void) {
+    return is_keyboard_master() ? magic_pointing : magic_remote;
+}
+
+void trackpad_rest_user(bool resting) {
+    pad_resting = resting;
+    pad_rest_at = timer_read();
+    if (!resting) {
+        pad_jump = false;
+    }
+}
+
+/* Pad half: a rest that lasted past the tap term with MAGIC on holds F19 */
+static void magic_pad_task(void) {
+    if (!magic_on()) {
+        pad_jump = false;
+    } else if (pad_resting && !pad_jump && timer_elapsed(pad_rest_at) >= MAGIC_REST_HOLD) {
+        pad_jump = true;
+        trackpad_touch_no_clicks();
+    }
+}
+
+static void magic_rpc(uint8_t in_len, const void *in, uint8_t out_len, void *out) {
+    if (in_len >= 1) {
+        magic_remote = *(const uint8_t *)in;
+    }
+    magic_pad_task();
+    if (out_len >= 1) {
+        *(uint8_t *)out = pad_jump;
+    }
+}
+
+/* USB half: keep the other half in step, press or release F19 */
+static void magic_task(void) {
+    static bool     sent;
+    static uint16_t sent_at;
+    if (!is_keyboard_master()) {
+        return;
+    }
+    uint16_t period = pad_here() ? MAGIC_RESEND : MAGIC_POLL;
+    if (sent != magic_pointing || (magic_pointing && timer_elapsed(sent_at) >= period)) {
+        uint8_t in = magic_pointing, out = 0;
+        if (transaction_rpc_exec(RPC_ID_USER_MAGIC, sizeof(in), &in, sizeof(out), &out)) {
+            sent            = magic_pointing;
+            pad_jump_remote = out;
+        } else {
+            pad_jump_remote = false;
+        }
+        sent_at = timer_read();
+    }
+    bool down = magic_pointing && (pad_here() ? pad_jump : pad_jump_remote);
+    if (down != magic_down) {
+        if (down) {
+            register_code(KC_F19);
+        } else {
+            unregister_code(KC_F19);
+        }
+        magic_down = down;
+    }
+}
+
 void keyboard_post_init_user(void) {
     accents_init();
+    transaction_register_rpc(RPC_ID_USER_MAGIC, magic_rpc);
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
@@ -158,6 +258,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case CK_OSMD: /* Cycle accent OS mode */
                 if (record->event.pressed) {
                     os_mode_cycle();
+                }
+                return false;
+            case CK_MAGIC: /* MAGIC pointing on/off */
+                if (record->event.pressed) {
+                    magic_pointing = !magic_pointing;
                 }
                 return false;
         }
@@ -294,7 +399,8 @@ static const char *layer_label(void) {
 /* Landscape, 21 columns: logo in columns 0-5, text from column 6 on the
  * logo's 4 lines (centred vertically on the taller left screen)
  *   +0  layer               +2  DPI (ADJUST)
- *   +1  LNX / WIN (USB half) +3  (empty) */
+ *   +1  LNX / WIN (USB half) +3  MAGIC (MAGIC pointing on)
+ * The PC status screen (left) shows MAGIC on its free bottom line. */
 bool oled_task_user(void) {
     uint8_t top = chocozor_logo_top();
     char    dpi[16] = "";
@@ -309,6 +415,7 @@ bool oled_task_user(void) {
     }
     if (status) {
         pcstatus_render();
+        oled_write_field(0, 7, 21, magic_on() ? "MAGIC" : "", false);
         return false;
     }
 
@@ -320,7 +427,7 @@ bool oled_task_user(void) {
     oled_write_field(6, top + 0, 15, layer_label(), false);
     oled_write_field(6, top + 1, 15, os_mode_label(), false);
     oled_write_field(6, top + 2, 15, dpi, false);
-    oled_write_field(6, top + 3, 15, "", false);
+    oled_write_field(6, top + 3, 15, magic_on() ? "MAGIC" : "", false);
 
     return false;
 }
@@ -373,6 +480,10 @@ bool apply_autocorrect(uint8_t backspaces, const char *str, char *typo, char *co
 
 void housekeeping_task_user(void) {
     accents_sync_task();
+    if (pad_here()) {
+        magic_pad_task();
+    }
+    magic_task();
     #ifdef RGB_MATRIX_ENABLE
     /* Reset RGB Matrix autocorrect indicator */
     if (previous_rgb_matrix_mode != RGB_MATRIX_NONE && timer_elapsed(check_rgblight_timer) > 200) {

@@ -99,7 +99,8 @@ static void temp_text(char *buf, size_t size, uint8_t temp) {
  *  2  CPU  23% [=====   ]  52C
  *  3  RAM  41% [========]
  *  4  GPU                  47C   (PCSTATUS_GPU builds, with a GPU sensor)
- *  6  Notifications       3     */
+ *  6  Notifications       3
+ *  7  left to the keymap (fire_v2_9: MAGIC pointing) */
 void pcstatus_render(void) {
     static const char *const days[]   = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
     static const char *const months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -142,6 +143,5 @@ void pcstatus_render(void) {
         snprintf(line, sizeof(line), "Notifications  %5u", status.notifications);
         write_line(6, line);
     }
-    write_line(7, "");
 }
 #endif
