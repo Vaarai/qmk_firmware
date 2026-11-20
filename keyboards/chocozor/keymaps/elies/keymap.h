@@ -35,11 +35,17 @@ _Static_assert(_NAV == TRACKPAD_SCROLL_LAYER, "config.h: TRACKPAD_SCROLL_LAYER m
 #define HRM_T RGUI_T(DV_T)
 #define HRM_N LALT_T(DV_N)
 #define HRM_S RCTL_T(DV_S)
+#define HRM_SCLN LCTL_T(DV_SCLN)
 #define CK_SELL LSFT(LCTL(KC_LEFT))
 #define CK_SELR LSFT(LCTL(KC_RIGHT))
 
 typedef enum user_custom_keycodes_t {
-    CK_RKJMP = SAFE_RANGE, /* Warframe rocket/bullet jump */
-    CK_DPII,
+    CK_DPII = SAFE_RANGE,
     CK_DPID,
+    CK_DRILL, /* starts or stops the keyhud drill */
+    CK_MAGIC, /* MAGIC pointing on/off: a touch on the pad starts at the gaze */
 } user_custom_keycodes_t;
+
+/* hud.c */
+void hud_record(uint16_t keycode, keyrecord_t *record);
+void hud_drill(void);

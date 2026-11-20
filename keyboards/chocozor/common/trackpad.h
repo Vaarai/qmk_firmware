@@ -11,3 +11,13 @@ typedef struct {
 } trackpad_touch_t;
 
 trackpad_touch_t trackpad_last_touch(void);
+
+/* A long press happened (still down); return true for the default right click. */
+bool trackpad_long_press_user(void);
+
+/* A touch started or stopped resting: still, past the point where it could be
+ * a tap (see trackpad.c). Every true is followed by a false. */
+void trackpad_rest_user(bool resting);
+
+/* The current touch only moves the cursor: its tap or long press clicks nothing. */
+void trackpad_touch_no_clicks(void);

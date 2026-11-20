@@ -8,16 +8,34 @@
  *   instead makes a double click, so the cursor holds still during that second
  *   touch until it moves or lasts too long for a tap
  * - tap in the top-right corner: right click; top-left corner: middle click
+ * - long press: a fresh touch held still for TP_LONG_PRESS right clicks, while
+ *   still down, unless trackpad_long_press_user (weak, for keymaps) takes it. Only from touchdown: a finger that moved, then paused to adjust,
+ *   never right clicks; lifting and touching again does. Nor does a touch soon
+ *   after a tap (TP_AFTER_TAP), even past the drag gap: that's a slow tap-drag
+ *   pausing before it moves
  * Holding NAV (TRACKPAD_SCROLL_LAYER, config.h) turns motion into scrolling
- * (pointing_device_task_user). Bus-agnostic: common/trackpad.mk links the
+ * (pointing_device_task_user). trackpad_touch_no_clicks makes the current
+ * touch only move: no tap, no long press.
+ * - rest: a fresh touch (not a tap-drag) still within TP_LONG_SLOP after
+ *   TP_REST_DELAY rests: trackpad_rest_user(true)
+ *   (weak, for keymaps), and its jitter doesn't move the cursor. Moving past
+ *   TP_LONG_SLOP or lifting ends the rest: trackpad_rest_user(false). Bus-agnostic: common/trackpad.mk links the
  * Cirque core over I2C or SPI. */
 
 #include QMK_KEYBOARD_H
 #include "trackpad.h"
 
 #define TP_TAP_TERM 180 /* ms: longer touches aren't taps */
+#define TP_REST_DELAY 60 /* ms a still touch waits before it rests (MAGIC
+                          * pointing's glide). Shorter than a tap: the host
+                          * only glides when the gaze is far from the cursor,
+                          * and a tap lifting early in the ease-in barely moved */
 #define TP_TAP_SLOP 10  /* pad units: taps move less than this */
 #define TP_DRAG_GAP 220 /* ms: a touch this soon after a tap drags */
+#define TP_LONG_PRESS 500 /* ms a fresh touch stays still to right click */
+#define TP_LONG_SLOP 3    /* pad units: a long press moves less than this, the
+                           * sensor's jitter but no deliberate motion */
+#define TP_AFTER_TAP 600  /* ms after a tap during which a touch can't long press */
 #define TP_CORNER 72    /* pad units: size of the corners that right and middle click */
 #define TP_SCROLL_DIV 24 /* cursor counts per scroll step with NAV held */
 #define TP_CLICK 30      /* ms a click holds its button, and the gap before a
@@ -30,6 +48,10 @@ static struct {
     bool     touching;
     bool     tapped; /* a tap's left button is down, waiting for TP_DRAG_GAP */
     bool     drag;   /* this touch started while tapped */
+    bool     pressed; /* this touch long pressed, or may not */
+    bool     quiet;   /* this touch only moves (trackpad_touch_no_clicks) */
+    bool     resting; /* between trackpad_rest_user(true) and (false) */
+    uint16_t tap_end; /* when the last tap lifted */
     uint16_t since;  /* touch start, or tap end while tapped */
     uint8_t  x0, y0, travel;
     uint16_t sx, sy; /* last scaled position */
@@ -43,6 +65,26 @@ static cursor_glide_context_t glide = {.config = {.coef = 102, .interval = 10, .
 
 trackpad_touch_t trackpad_last_touch(void) {
     return last;
+}
+
+__attribute__((weak)) bool trackpad_long_press_user(void) {
+    return true;
+}
+
+__attribute__((weak)) void trackpad_rest_user(bool resting) {}
+
+static void rest(bool on) {
+    if (tp.resting != on) {
+        tp.resting = on;
+        trackpad_rest_user(on);
+    }
+}
+
+void trackpad_touch_no_clicks(void) {
+    if (tp.touching) {
+        tp.quiet   = true;
+        tp.pressed = true;
+    }
 }
 
 static uint8_t pad_unit(uint16_t v, uint16_t lower, uint16_t range) {
@@ -87,11 +129,13 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
         if (!tp.touching) {
             tp.touching = true;
             tp.drag     = tp.tapped;
+            tp.pressed  = tp.drag || timer_elapsed(tp.tap_end) < TP_AFTER_TAP;
             tp.tapped   = false;
             tp.since    = timer_read();
             tp.x0       = ux;
             tp.y0       = uy;
             tp.travel   = 0;
+            tp.quiet    = false;
         } else {
             dx = d.xValue - tp.sx;
             dy = d.yValue - tp.sy;
@@ -100,14 +144,34 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
             if (tp.drag && tp.travel < TP_TAP_SLOP && timer_elapsed(tp.since) < TP_TAP_TERM) {
                 dx = dy = 0; /* maybe a double tap: jitter with the button down would be a drag */
             }
+            if (!tp.pressed && tp.travel >= TP_LONG_SLOP) {
+                tp.pressed = true; /* it moved: not a long press, even if it stops */
+            }
+            if (tp.travel >= TP_LONG_SLOP) {
+                rest(false);
+            } else if (!tp.drag && timer_elapsed(tp.since) >= TP_REST_DELAY) {
+                rest(true);
+            }
+            if (tp.resting) {
+                dx = dy = 0;
+            }
+            if (!tp.pressed && timer_elapsed(tp.since) >= TP_LONG_PRESS) {
+                tp.pressed = true;
+                if (trackpad_long_press_user()) {
+                    tp.click    = MOUSE_BTN2;
+                    tp.click_at = timer_read();
+                }
+            }
         }
         tp.sx = d.xValue;
         tp.sy = d.yValue;
         cursor_glide_update(&glide, CONSTRAIN_HID_XY(dx), CONSTRAIN_HID_XY(dy), d.zValue);
     } else if (d.valid && tp.touching) {
-        bool tap    = timer_elapsed(tp.since) < TP_TAP_TERM && tp.travel < TP_TAP_SLOP;
+        bool tap    = !tp.quiet && timer_elapsed(tp.since) < TP_TAP_TERM && tp.travel < TP_TAP_SLOP;
+        bool held   = tp.pressed && timer_elapsed(tp.since) >= TP_LONG_PRESS && tp.travel < TP_LONG_SLOP;
         tp.touching = false;
         last.touching = false;
+        rest(false);
         if (tp.drag) {
             tp.held &= ~MOUSE_BTN1;
             if (tap) {
@@ -122,7 +186,10 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
             tp.tapped = true;
             tp.since  = timer_read();
         }
-        if (!tap) {
+        if (tap) {
+            tp.tap_end = timer_read();
+        }
+        if (!tap && !held) {
             glided = cursor_glide_start(&glide);
         } else {
             cursor_glide_update(&glide, 0, 0, 0);

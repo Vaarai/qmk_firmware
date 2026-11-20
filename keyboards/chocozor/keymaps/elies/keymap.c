@@ -18,6 +18,7 @@
 
 #include "./keymap.h"
 #include "./tap_dances.h"
+#include "../../common/trackpad.h"
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_ALPHA] = LAYOUT_split_3x6_4( /* Dvorak, keycodes for an OS set to us(dvorak) */
@@ -26,9 +27,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
        KC_ESC,   HRM_A,   HRM_O,   HRM_E,    DV_U,    DV_I,                         DV_D,    DV_H,   HRM_T,   HRM_N,   HRM_S, DV_MINS,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      KC_LSFT, DV_SCLN,    DV_Q,    DV_J,    DV_K,    DV_X,                         DV_B,    DV_M,    DV_W,    DV_V,    DV_Z, KC_RSFT,
+      KC_LSFT,HRM_SCLN,    DV_Q,    DV_J,    DV_K,    DV_X,                         DV_B,    DV_M,    DV_W,    DV_V,    DV_Z, KC_RSFT,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
-               KC_LGUI, KC_SPC, MO(_NAV), TD(TD_SFT_CAPSW),   TD(TD_SFT_CAPSW), MO(_NUM), KC_BSPC,  KC_ENT
+               KC_LGUI, KC_SPC, MO(_NAV), TD(TD_SFT_CAPSW),             KC_ENT, MO(_NUM), KC_BSPC,  KC_ENT
                              //`-----------------------------------'  `-----------------------------------'
   ),
 
@@ -40,7 +41,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
    A(KC_LEFT), C(DV_X), G(DV_V), C(DV_V), C(DV_C), C(DV_Z),                      MS_WHLD, KC_HOME, CK_SELL, CK_SELR,  KC_END, _______,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
-                                 _______, _______, _______, _______,    _______,MO(_ADJUST), _______, _______
+                                 _______, _______, _______, _______,    _______,MO(_ADJUST),  KC_DEL, _______
                              //`-----------------------------------'  `-----------------------------------'
   ),
 
@@ -48,9 +49,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
       _______,    KC_1,    KC_2,    KC_3,    KC_4,    KC_5,                         KC_6,    KC_7,    KC_8,    KC_9,    KC_0,  KC_DEL,
   //|--------+-- / ---+-- { ---+-- ( ---+-- [ ---+-- - ---|                    |--- _ --+--- ] --+-- ) ---+-- } ---+-- \ ---+--------|
-      _______, DV_SLSH, DV_LCBR, DV_LPRN, DV_LBRC, DV_MINS,                      DV_UNDS, DV_RBRC, DV_RPRN, DV_RCBR, DV_BSLS, _______,
+      _______, DV_SLSH, DV_LCBR, DV_LPRN, DV_LBRC, DV_MINS,                      DV_UNDS, DV_RBRC, DV_RPRN, DV_RCBR, DV_BSLS, DV_PLUS,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      _______, XXXXXXX,  DV_GRV, DV_QUES,  DV_EQL, XXXXXXX,                      XXXXXXX, KC_LSFT, KC_LGUI, KC_LALT, KC_LCTL, _______,
+      _______, XXXXXXX,  DV_GRV, DV_QUES,  DV_EQL, XXXXXXX,                      XXXXXXX, DV_PLUS, DV_EXLM, DV_TILD, XXXXXXX, _______,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
                                _______, _______,MO(_ADJUST), _______,    _______, _______, _______, _______
                              //`-----------------------------------'  `-----------------------------------'
@@ -58,58 +59,94 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [_ADJUST] = LAYOUT_split_3x6_4(
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                        KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,
+      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                      XXXXXXX, TO(_G0),CK_DRILL,CK_MAGIC, XXXXXXX, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      XXXXXXX, UG_TOGG, UG_HUEU, UG_VALU, CK_DPII, XXXXXXX,                        KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,
+        KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,                        KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,
   //|--------+--------+--------+--------+--------|--------|                    |--------+--------+--------+--------+--------+--------|
-      XXXXXXX, UG_NEXT, UG_HUED, UG_VALD, CK_DPID, XXXXXXX,                      TO(_G0), TO(_G1), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+      XXXXXXX, UG_TOGG, UG_HUED, UG_VALD, CK_DPID, XXXXXXX,                      XXXXXXX, CK_DPII, UG_VALU, UG_HUEU, UG_NEXT, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
                                  _______, _______, _______, _______,    _______, _______, _______, _______
                              //`-----------------------------------'  `-----------------------------------'
   ),
 
-  /* Generic game */
+  /* Game, physical keys: for games that read key positions (QWERTY labels) */
     [_G0] = LAYOUT_split_3x6_4(
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-       KC_ESC,  KC_TAB,    KC_Q,    KC_W,    KC_E,    KC_R,                         KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,
+       KC_ESC,  KC_TAB,    KC_1,    KC_2,    KC_3,    KC_R,                         KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      KC_LALT, KC_LSFT,    KC_A,    KC_S,    KC_D,    KC_F,                         KC_G,    KC_H,    KC_J,    KC_K,    KC_L, KC_SCLN,
+      KC_LSFT,    KC_Q,    KC_A,    KC_W,    KC_D,    KC_E,                         KC_G,    KC_H,    KC_J,    KC_K,    KC_L, KC_SCLN,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      KC_LGUI, KC_LCTL,    KC_Z,    KC_X,    KC_C,    KC_V,                         KC_B,    KC_N,    KC_M, KC_COMM,  KC_DOT, KC_SLSH,
+      KC_LCTL,    KC_Z,    KC_X,    KC_S,    KC_C,    KC_F,                         KC_B,    KC_N,    KC_M, KC_COMM,  KC_DOT, KC_SLSH,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
-                                 _______,  KC_SPC,  KC_SPC, MS_BTN3,    XXXXXXX, TG(_G0), XXXXXXX, _______
+                                    KC_4,  KC_SPC,    KC_V,    KC_G,    XXXXXXX, TG(_G0), TO(_G1), _______
                              //`-----------------------------------'  `-----------------------------------'
   ),
 
-  /* Warframe */
+  /* Game, logical keys: the same keys as us(dvorak) types them, for games that read characters */
     [_G1] = LAYOUT_split_3x6_4(
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-       KC_TAB,  KC_ESC,    KC_Q,    KC_W,    KC_1,    KC_2,                      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+       KC_ESC,  KC_TAB,    DV_1,    DV_2,    DV_3,    DV_R,                         DV_F,    DV_G,    DV_C,    DV_R,    DV_L, DV_SLSH,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-         KC_F, KC_LSFT,    KC_A,    KC_S,    KC_D,    KC_3,                      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+      KC_LSFT,    DV_Q,    DV_A,    DV_W,    DV_D,    DV_E,                         DV_D,    DV_H,    DV_T,    DV_N,    DV_S, DV_MINS,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      KC_LGUI, KC_LCTL,    KC_M,    KC_Y,    KC_X,    KC_4,                      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+      KC_LCTL,    DV_Z,    DV_X,    DV_S,    DV_C,    DV_F,                         DV_B,    DV_M,    DV_W,    DV_V,    DV_Z, KC_RSFT,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
-                                  _______, KC_SPC,CK_RKJMP,    KC_5,    XXXXXXX, TG(_G1), XXXXXXX, _______
+                                    DV_4,  KC_SPC,    DV_V,    DV_G,    XXXXXXX, TG(_G1), TO(_G0), _______
                              //`-----------------------------------'  `-----------------------------------'
   ),
 };
 
+/* A layer key is never a same-hand roll: a home row mod held through it can
+ * still become a hold, for shortcuts across layers like Gui + NAV + arrow. */
+bool get_chordal_hold(uint16_t tap_hold_keycode, keyrecord_t *tap_hold_record, uint16_t other_keycode, keyrecord_t *other_record) {
+    if (IS_QK_MOMENTARY(other_keycode)) {
+        return true;
+    }
+    return get_chordal_hold_default(tap_hold_record, other_record);
+}
+
+/* MAGIC pointing (Manual And Gaze Input Cascaded, Zhai et al. 1999): while
+ * on, F19 is held down while a finger rests on the pad (trackpad_rest_user:
+ * still, and past being a tap). The host pulls the cursor to the gaze while
+ * it is down, so a tap still clicks in place, and moving or lifting the finger
+ * takes the cursor back. A long press never right clicks (the top-right corner
+ * tap does). CK_MAGIC (ADJUST) toggles it; off at power-up. */
+static bool magic_pointing = false;
+static bool magic_down     = false;
+
+void trackpad_rest_user(bool resting) {
+    if (resting && magic_pointing && !magic_down) {
+        register_code(KC_F19);
+        magic_down = true;
+    } else if (!resting && magic_down) {
+        unregister_code(KC_F19);
+        magic_down = false;
+    }
+}
+
+bool trackpad_long_press_user(void) {
+    return false;
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    hud_record(keycode, record);
     
     if(IS_USER_KEYCODE(keycode))
     {
         switch (keycode) {
-            case CK_RKJMP: /* Warframe rocket jump */
-                if (record->event.pressed) {
-                    SEND_STRING(SS_DOWN(X_C));
-                } else {
-                    SEND_STRING(SS_DOWN(X_SPC) SS_DELAY(50) SS_UP(X_C) SS_DELAY(50) SS_UP(X_SPC));
-                }
-                return false;
             case CK_DPII: /* Increase trackpad DPI */
                 if (record->event.pressed) {
                     pointing_device_set_cpi(pointing_device_get_cpi()+100);
+                }
+                return false;
+            case CK_MAGIC:
+                if (record->event.pressed) {
+                    magic_pointing = !magic_pointing;
+                }
+                return false;
+            case CK_DRILL:
+                if (record->event.pressed) {
+                    hud_drill();
                 }
                 return false;
             case CK_DPID: /* Decrease trackpad DPI */
@@ -148,6 +185,9 @@ bool oled_task_user(void) {
     oled_set_cursor(0, 13);
     oled_write_ln(dpi_string, 0);
 
+    oled_set_cursor(0, 10);
+    oled_write_ln(magic_pointing ? "MAGIC" : "", 0);
+
     /* Print layer status */
     oled_set_cursor(0, 7);
     switch (get_highest_layer(layer_state)) {
@@ -168,10 +208,10 @@ bool oled_task_user(void) {
             oled_write_ln(dpi_string, 0);
             break;
         case _G0:
-            oled_write_ln("GAME0", 0);
+            oled_write_ln("GAMEq", 0);
             break;
         case _G1:
-            oled_write_ln("GAME1", 0);
+            oled_write_ln("GAMEd", 0);
             break;
     }
 
@@ -184,8 +224,8 @@ void pointing_device_init_user(void) {
 
 /* Knobs: index 0 is the left half's. */
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
-    [_ALPHA]  = { ENCODER_CCW_CW(MS_WHLU, MS_WHLD),      ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
-    [_NAV]    = { ENCODER_CCW_CW(_______, _______),      ENCODER_CCW_CW(G(KC_LEFT), G(KC_RIGHT)) },
+    [_ALPHA]  = { ENCODER_CCW_CW(KC_UP, KC_DOWN),        ENCODER_CCW_CW(KC_LEFT, KC_RIGHT) },
+    [_NAV]    = { ENCODER_CCW_CW(XXXXXXX, XXXXXXX),      ENCODER_CCW_CW(MS_WHLD, MS_WHLU) },
     [_NUM]    = { ENCODER_CCW_CW(C(DV_MINS), C(DV_EQL)), ENCODER_CCW_CW(_______, _______) },
     [_ADJUST] = { ENCODER_CCW_CW(_______, _______),      ENCODER_CCW_CW(_______, _______) },
     [_G0]     = { ENCODER_CCW_CW(_______, _______),      ENCODER_CCW_CW(_______, _______) },
