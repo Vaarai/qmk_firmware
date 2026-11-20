@@ -9,15 +9,13 @@
  *   touch until it moves or lasts too long for a tap
  * - tap in the top-right corner: right click; top-left corner: middle click
  * - long press: a fresh touch held still for TP_LONG_PRESS right clicks, while
- *   still down. Only from touchdown: a finger that moved, then paused to adjust,
+ *   still down, unless trackpad_long_press_user (weak, for keymaps) takes it. Only from touchdown: a finger that moved, then paused to adjust,
  *   never right clicks; lifting and touching again does. Nor does a touch soon
  *   after a tap (TP_AFTER_TAP), even past the drag gap: that's a slow tap-drag
  *   pausing before it moves
  * Holding NAV (TRACKPAD_SCROLL_LAYER, config.h) turns motion into scrolling
- * (pointing_device_task_user). Each fresh touch (not one continuing a tap into
- * a drag) calls trackpad_touch_start_user (weak, for keymaps);
- * trackpad_touch_no_clicks makes the current touch only move: no tap, no long
- * press. Bus-agnostic: common/trackpad.mk links the
+ * (pointing_device_task_user). trackpad_touch_no_clicks makes the current
+ * touch only move: no tap, no long press. Bus-agnostic: common/trackpad.mk links the
  * Cirque core over I2C or SPI. */
 
 #include QMK_KEYBOARD_H
@@ -60,7 +58,9 @@ trackpad_touch_t trackpad_last_touch(void) {
     return last;
 }
 
-__attribute__((weak)) void trackpad_touch_start_user(void) {}
+__attribute__((weak)) bool trackpad_long_press_user(void) {
+    return true;
+}
 
 void trackpad_touch_no_clicks(void) {
     if (tp.touching) {
@@ -118,9 +118,6 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
             tp.y0       = uy;
             tp.travel   = 0;
             tp.quiet    = false;
-            if (!tp.drag) {
-                trackpad_touch_start_user();
-            }
         } else {
             dx = d.xValue - tp.sx;
             dy = d.yValue - tp.sy;
@@ -133,9 +130,11 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
                 tp.pressed = true; /* it moved: not a long press, even if it stops */
             }
             if (!tp.pressed && timer_elapsed(tp.since) >= TP_LONG_PRESS) {
-                tp.pressed  = true;
-                tp.click    = MOUSE_BTN2;
-                tp.click_at = timer_read();
+                tp.pressed = true;
+                if (trackpad_long_press_user()) {
+                    tp.click    = MOUSE_BTN2;
+                    tp.click_at = timer_read();
+                }
             }
         }
         tp.sx = d.xValue;
