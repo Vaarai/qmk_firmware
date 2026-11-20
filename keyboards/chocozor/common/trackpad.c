@@ -25,7 +25,8 @@
 #include QMK_KEYBOARD_H
 #include "trackpad.h"
 
-#define TP_TAP_TERM 180 /* ms: longer touches aren't taps */
+#define TP_TAP_TERM 120 /* ms: longer touches aren't taps; also when a still
+                         * touch starts resting (MAGIC pointing's glide) */
 #define TP_TAP_SLOP 10  /* pad units: taps move less than this */
 #define TP_DRAG_GAP 220 /* ms: a touch this soon after a tap drags */
 #define TP_LONG_PRESS 500 /* ms a fresh touch stays still to right click */
