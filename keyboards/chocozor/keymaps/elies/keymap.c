@@ -108,7 +108,8 @@ bool get_chordal_hold(uint16_t tap_hold_keycode, keyrecord_t *tap_hold_record, u
 /* MAGIC pointing (Manual And Gaze Input Cascaded, Zhai et al. 1999): while
  * on, a finger landing on the pad sends F19, which the host binds to moving
  * the cursor to the gaze (tobiifree-warp jump), so the touch continues from
- * there. CK_MAGIC (ADJUST) toggles it; off at power-up. */
+ * there; the host answers HUD_MAGIC (hud.c) when it did move the cursor, so
+ * that touch clicks nothing. CK_MAGIC (ADJUST) toggles it; off at power-up. */
 static bool magic_pointing = false;
 
 void trackpad_touch_start_user(void) {

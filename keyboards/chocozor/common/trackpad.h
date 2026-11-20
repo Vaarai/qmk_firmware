@@ -12,5 +12,9 @@ typedef struct {
 
 trackpad_touch_t trackpad_last_touch(void);
 
-/* Called when a finger lands on the pad (not while it stays down). */
+/* Called when a finger lands on the pad (not while it stays down, nor when the
+ * touch continues a tap into a drag). */
 void trackpad_touch_start_user(void);
+
+/* The current touch only moves the cursor: its tap or long press clicks nothing. */
+void trackpad_touch_no_clicks(void);

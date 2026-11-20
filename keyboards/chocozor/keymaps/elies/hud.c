@@ -12,6 +12,8 @@
  *                               pad's last touch (common/trackpad.h), when this half
  *                               has the pad
  *   [HUD_BOOT, 'B', 'O', 'O', 'T'] reboots into the bootloader (flash.py)
+ *   [HUD_MAGIC]                 the touch that sent MAGIC pointing's F19 moved
+ *                               the cursor: it clicks nothing (no answer)
  * Board -> host, on any change while the stream is on:
  *   [HUD_STATE, layer_state (u32 LE), default_layer_state (u32 LE), mods,
  *    oneshot mods, caps word, rows, one matrix row bitmask per row...]
@@ -28,7 +30,7 @@
 #include "keymap_introspection.h"
 #include "../../common/trackpad.h"
 
-enum { HUD_HELLO = 1, HUD_KEYMAP = 2, HUD_STATE = 3, HUD_BOOT = 4, HUD_ENCODERS = 5, HUD_TOUCH = 6, HUD_KEY = 7, HUD_DRILL = 8 };
+enum { HUD_HELLO = 1, HUD_KEYMAP = 2, HUD_STATE = 3, HUD_BOOT = 4, HUD_ENCODERS = 5, HUD_TOUCH = 6, HUD_KEY = 7, HUD_DRILL = 8, HUD_MAGIC = 9 };
 
 #define HUD_REPORT 32
 #define HUD_ALIVE_MS 3000
@@ -101,6 +103,9 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
             out[4]             = t.touching;
             break;
         }
+        case HUD_MAGIC:
+            trackpad_touch_no_clicks();
+            return;
         case HUD_BOOT:
             if (memcmp(&data[1], "BOOT", 4) == 0) {
                 reset_keyboard();
