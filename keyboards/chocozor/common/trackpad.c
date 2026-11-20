@@ -27,6 +27,8 @@
 #define TP_TAP_SLOP 10  /* pad units: taps move less than this */
 #define TP_DRAG_GAP 220 /* ms: a touch this soon after a tap drags */
 #define TP_LONG_PRESS 500 /* ms a fresh touch stays still to right click */
+#define TP_LONG_SLOP 3    /* pad units: a long press moves less than this, the
+                           * sensor's jitter but no deliberate motion */
 #define TP_AFTER_TAP 600  /* ms after a tap during which a touch can't long press */
 #define TP_CORNER 72    /* pad units: size of the corners that right and middle click */
 #define TP_SCROLL_DIV 24 /* cursor counts per scroll step with NAV held */
@@ -127,7 +129,10 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
             if (tp.drag && tp.travel < TP_TAP_SLOP && timer_elapsed(tp.since) < TP_TAP_TERM) {
                 dx = dy = 0; /* maybe a double tap: jitter with the button down would be a drag */
             }
-            if (!tp.pressed && tp.travel < TP_TAP_SLOP && timer_elapsed(tp.since) >= TP_LONG_PRESS) {
+            if (!tp.pressed && tp.travel >= TP_LONG_SLOP) {
+                tp.pressed = true; /* it moved: not a long press, even if it stops */
+            }
+            if (!tp.pressed && timer_elapsed(tp.since) >= TP_LONG_PRESS) {
                 tp.pressed  = true;
                 tp.click    = MOUSE_BTN2;
                 tp.click_at = timer_read();
@@ -138,7 +143,7 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
         cursor_glide_update(&glide, CONSTRAIN_HID_XY(dx), CONSTRAIN_HID_XY(dy), d.zValue);
     } else if (d.valid && tp.touching) {
         bool tap    = !tp.quiet && timer_elapsed(tp.since) < TP_TAP_TERM && tp.travel < TP_TAP_SLOP;
-        bool held   = tp.pressed && timer_elapsed(tp.since) >= TP_LONG_PRESS && tp.travel < TP_TAP_SLOP;
+        bool held   = tp.pressed && timer_elapsed(tp.since) >= TP_LONG_PRESS && tp.travel < TP_LONG_SLOP;
         tp.touching = false;
         last.touching = false;
         if (tp.drag) {
