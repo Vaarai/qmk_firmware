@@ -14,7 +14,8 @@
  *   after a tap (TP_AFTER_TAP), even past the drag gap: that's a slow tap-drag
  *   pausing before it moves
  * Holding NAV (TRACKPAD_SCROLL_LAYER, config.h) turns motion into scrolling
- * (pointing_device_task_user). Bus-agnostic: common/trackpad.mk links the
+ * (pointing_device_task_user). Each fresh touch calls trackpad_touch_start_user
+ * (weak, for keymaps). Bus-agnostic: common/trackpad.mk links the
  * Cirque core over I2C or SPI. */
 
 #include QMK_KEYBOARD_H
@@ -53,6 +54,8 @@ static cursor_glide_context_t glide = {.config = {.coef = 102, .interval = 10, .
 trackpad_touch_t trackpad_last_touch(void) {
     return last;
 }
+
+__attribute__((weak)) void trackpad_touch_start_user(void) {}
 
 static uint8_t pad_unit(uint16_t v, uint16_t lower, uint16_t range) {
     v = v < lower ? 0 : v - lower;
@@ -102,6 +105,7 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
             tp.x0       = ux;
             tp.y0       = uy;
             tp.travel   = 0;
+            trackpad_touch_start_user();
         } else {
             dx = d.xValue - tp.sx;
             dy = d.yValue - tp.sy;

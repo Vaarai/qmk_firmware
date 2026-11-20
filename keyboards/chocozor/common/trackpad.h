@@ -11,3 +11,6 @@ typedef struct {
 } trackpad_touch_t;
 
 trackpad_touch_t trackpad_last_touch(void);
+
+/* Called when a finger lands on the pad (not while it stays down). */
+void trackpad_touch_start_user(void);

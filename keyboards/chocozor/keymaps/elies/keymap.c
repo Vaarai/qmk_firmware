@@ -18,6 +18,7 @@
 
 #include "./keymap.h"
 #include "./tap_dances.h"
+#include "../../common/trackpad.h"
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_ALPHA] = LAYOUT_split_3x6_4( /* Dvorak, keycodes for an OS set to us(dvorak) */
@@ -184,6 +185,14 @@ bool oled_task_user(void) {
     }
 
     return false;
+}
+
+/* NUM held when a finger lands: F19, which the host binds to moving the
+ * cursor to the gaze (tobiifree-warp jump), so the touch continues from there. */
+void trackpad_touch_start_user(void) {
+    if (layer_state_is(_NUM)) {
+        tap_code(KC_F19);
+    }
 }
 
 void pointing_device_init_user(void) {
