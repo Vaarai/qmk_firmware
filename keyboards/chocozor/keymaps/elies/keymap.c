@@ -106,16 +106,25 @@ bool get_chordal_hold(uint16_t tap_hold_keycode, keyrecord_t *tap_hold_record, u
 }
 
 /* MAGIC pointing (Manual And Gaze Input Cascaded, Zhai et al. 1999): while
- * on, a long press on the pad sends F19, which the host binds to bringing the
- * cursor to the gaze, and the touch goes on moving it from there. A long press
- * never right clicks (the top-right corner tap does). CK_MAGIC (ADJUST)
- * toggles it; off at power-up. */
+ * on, F19 is held down while a finger rests on the pad (trackpad_rest_user:
+ * still, and past being a tap). The host pulls the cursor to the gaze while
+ * it is down, so a tap still clicks in place, and moving or lifting the finger
+ * takes the cursor back. A long press never right clicks (the top-right corner
+ * tap does). CK_MAGIC (ADJUST) toggles it; off at power-up. */
 static bool magic_pointing = false;
+static bool magic_down     = false;
+
+void trackpad_rest_user(bool resting) {
+    if (resting && magic_pointing && !magic_down) {
+        register_code(KC_F19);
+        magic_down = true;
+    } else if (!resting && magic_down) {
+        unregister_code(KC_F19);
+        magic_down = false;
+    }
+}
 
 bool trackpad_long_press_user(void) {
-    if (magic_pointing) {
-        tap_code(KC_F19);
-    }
     return false;
 }
 

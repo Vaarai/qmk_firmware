@@ -15,7 +15,11 @@
  *   pausing before it moves
  * Holding NAV (TRACKPAD_SCROLL_LAYER, config.h) turns motion into scrolling
  * (pointing_device_task_user). trackpad_touch_no_clicks makes the current
- * touch only move: no tap, no long press. Bus-agnostic: common/trackpad.mk links the
+ * touch only move: no tap, no long press.
+ * - rest: a fresh touch (not a tap-drag) still within TP_LONG_SLOP when it
+ *   can no longer be a tap (TP_TAP_TERM) rests: trackpad_rest_user(true)
+ *   (weak, for keymaps), and its jitter doesn't move the cursor. Moving past
+ *   TP_LONG_SLOP or lifting ends the rest: trackpad_rest_user(false). Bus-agnostic: common/trackpad.mk links the
  * Cirque core over I2C or SPI. */
 
 #include QMK_KEYBOARD_H
@@ -42,6 +46,7 @@ static struct {
     bool     drag;   /* this touch started while tapped */
     bool     pressed; /* this touch long pressed, or may not */
     bool     quiet;   /* this touch only moves (trackpad_touch_no_clicks) */
+    bool     resting; /* between trackpad_rest_user(true) and (false) */
     uint16_t tap_end; /* when the last tap lifted */
     uint16_t since;  /* touch start, or tap end while tapped */
     uint8_t  x0, y0, travel;
@@ -60,6 +65,15 @@ trackpad_touch_t trackpad_last_touch(void) {
 
 __attribute__((weak)) bool trackpad_long_press_user(void) {
     return true;
+}
+
+__attribute__((weak)) void trackpad_rest_user(bool resting) {}
+
+static void rest(bool on) {
+    if (tp.resting != on) {
+        tp.resting = on;
+        trackpad_rest_user(on);
+    }
 }
 
 void trackpad_touch_no_clicks(void) {
@@ -129,6 +143,14 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
             if (!tp.pressed && tp.travel >= TP_LONG_SLOP) {
                 tp.pressed = true; /* it moved: not a long press, even if it stops */
             }
+            if (tp.travel >= TP_LONG_SLOP) {
+                rest(false);
+            } else if (!tp.drag && timer_elapsed(tp.since) >= TP_TAP_TERM) {
+                rest(true);
+            }
+            if (tp.resting) {
+                dx = dy = 0;
+            }
             if (!tp.pressed && timer_elapsed(tp.since) >= TP_LONG_PRESS) {
                 tp.pressed = true;
                 if (trackpad_long_press_user()) {
@@ -145,6 +167,7 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
         bool held   = tp.pressed && timer_elapsed(tp.since) >= TP_LONG_PRESS && tp.travel < TP_LONG_SLOP;
         tp.touching = false;
         last.touching = false;
+        rest(false);
         if (tp.drag) {
             tp.held &= ~MOUSE_BTN1;
             if (tap) {
