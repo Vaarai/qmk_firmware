@@ -16,8 +16,8 @@
  * Holding NAV (TRACKPAD_SCROLL_LAYER, config.h) turns motion into scrolling
  * (pointing_device_task_user). trackpad_touch_no_clicks makes the current
  * touch only move: no tap, no long press.
- * - rest: a fresh touch (not a tap-drag) still within TP_LONG_SLOP when it
- *   can no longer be a tap (TP_TAP_TERM) rests: trackpad_rest_user(true)
+ * - rest: a fresh touch (not a tap-drag) still within TP_LONG_SLOP after
+ *   TP_REST_DELAY rests: trackpad_rest_user(true)
  *   (weak, for keymaps), and its jitter doesn't move the cursor. Moving past
  *   TP_LONG_SLOP or lifting ends the rest: trackpad_rest_user(false). Bus-agnostic: common/trackpad.mk links the
  * Cirque core over I2C or SPI. */
@@ -25,8 +25,11 @@
 #include QMK_KEYBOARD_H
 #include "trackpad.h"
 
-#define TP_TAP_TERM 120 /* ms: longer touches aren't taps; also when a still
-                         * touch starts resting (MAGIC pointing's glide) */
+#define TP_TAP_TERM 180 /* ms: longer touches aren't taps */
+#define TP_REST_DELAY 60 /* ms a still touch waits before it rests (MAGIC
+                          * pointing's glide). Shorter than a tap: the host
+                          * only glides when the gaze is far from the cursor,
+                          * and a tap lifting early in the ease-in barely moved */
 #define TP_TAP_SLOP 10  /* pad units: taps move less than this */
 #define TP_DRAG_GAP 220 /* ms: a touch this soon after a tap drags */
 #define TP_LONG_PRESS 500 /* ms a fresh touch stays still to right click */
@@ -146,7 +149,7 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
             }
             if (tp.travel >= TP_LONG_SLOP) {
                 rest(false);
-            } else if (!tp.drag && timer_elapsed(tp.since) >= TP_TAP_TERM) {
+            } else if (!tp.drag && timer_elapsed(tp.since) >= TP_REST_DELAY) {
                 rest(true);
             }
             if (tp.resting) {
