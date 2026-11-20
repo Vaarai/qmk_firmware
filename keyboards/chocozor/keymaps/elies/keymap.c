@@ -59,7 +59,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [_ADJUST] = LAYOUT_split_3x6_4(
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                      XXXXXXX, TO(_G0),CK_DRILL, XXXXXXX, XXXXXXX, XXXXXXX,
+      QK_BOOT, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                      XXXXXXX, TO(_G0),CK_DRILL,CK_MAGIC, XXXXXXX, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
         KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,                        KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12,
   //|--------+--------+--------+--------+--------|--------|                    |--------+--------+--------+--------+--------+--------|
@@ -105,6 +105,18 @@ bool get_chordal_hold(uint16_t tap_hold_keycode, keyrecord_t *tap_hold_record, u
     return get_chordal_hold_default(tap_hold_record, other_record);
 }
 
+/* MAGIC pointing (Manual And Gaze Input Cascaded, Zhai et al. 1999): while
+ * on, a finger landing on the pad sends F19, which the host binds to moving
+ * the cursor to the gaze (tobiifree-warp jump), so the touch continues from
+ * there. CK_MAGIC (ADJUST) toggles it; off at power-up. */
+static bool magic_pointing = false;
+
+void trackpad_touch_start_user(void) {
+    if (magic_pointing) {
+        tap_code(KC_F19);
+    }
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     hud_record(keycode, record);
     
@@ -114,6 +126,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case CK_DPII: /* Increase trackpad DPI */
                 if (record->event.pressed) {
                     pointing_device_set_cpi(pointing_device_get_cpi()+100);
+                }
+                return false;
+            case CK_MAGIC:
+                if (record->event.pressed) {
+                    magic_pointing = !magic_pointing;
                 }
                 return false;
             case CK_DRILL:
@@ -157,6 +174,9 @@ bool oled_task_user(void) {
     oled_set_cursor(0, 13);
     oled_write_ln(dpi_string, 0);
 
+    oled_set_cursor(0, 10);
+    oled_write_ln(magic_pointing ? "MAGIC" : "", 0);
+
     /* Print layer status */
     oled_set_cursor(0, 7);
     switch (get_highest_layer(layer_state)) {
@@ -185,14 +205,6 @@ bool oled_task_user(void) {
     }
 
     return false;
-}
-
-/* NUM held when a finger lands: F19, which the host binds to moving the
- * cursor to the gaze (tobiifree-warp jump), so the touch continues from there. */
-void trackpad_touch_start_user(void) {
-    if (layer_state_is(_NUM)) {
-        tap_code(KC_F19);
-    }
 }
 
 void pointing_device_init_user(void) {

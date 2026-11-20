@@ -43,6 +43,7 @@ typedef enum user_custom_keycodes_t {
     CK_DPII = SAFE_RANGE,
     CK_DPID,
     CK_DRILL, /* starts or stops the keyhud drill */
+    CK_MAGIC, /* MAGIC pointing on/off: a touch on the pad starts at the gaze */
 } user_custom_keycodes_t;
 
 /* hud.c */
