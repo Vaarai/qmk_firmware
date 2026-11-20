@@ -10,7 +10,9 @@
  * - tap in the top-right corner: right click; top-left corner: middle click
  * - long press: a fresh touch held still for TP_LONG_PRESS right clicks, while
  *   still down. Only from touchdown: a finger that moved, then paused to adjust,
- *   never right clicks; lifting and touching again does
+ *   never right clicks; lifting and touching again does. Nor does a touch soon
+ *   after a tap (TP_AFTER_TAP), even past the drag gap: that's a slow tap-drag
+ *   pausing before it moves
  * Holding NAV (TRACKPAD_SCROLL_LAYER, config.h) turns motion into scrolling
  * (pointing_device_task_user). Bus-agnostic: common/trackpad.mk links the
  * Cirque core over I2C or SPI. */
@@ -22,6 +24,7 @@
 #define TP_TAP_SLOP 10  /* pad units: taps move less than this */
 #define TP_DRAG_GAP 220 /* ms: a touch this soon after a tap drags */
 #define TP_LONG_PRESS 500 /* ms a fresh touch stays still to right click */
+#define TP_AFTER_TAP 600  /* ms after a tap during which a touch can't long press */
 #define TP_CORNER 72    /* pad units: size of the corners that right and middle click */
 #define TP_SCROLL_DIV 24 /* cursor counts per scroll step with NAV held */
 #define TP_CLICK 30      /* ms a click holds its button, and the gap before a
@@ -34,7 +37,8 @@ static struct {
     bool     touching;
     bool     tapped; /* a tap's left button is down, waiting for TP_DRAG_GAP */
     bool     drag;   /* this touch started while tapped */
-    bool     pressed; /* this touch long pressed */
+    bool     pressed; /* this touch long pressed, or may not */
+    uint16_t tap_end; /* when the last tap lifted */
     uint16_t since;  /* touch start, or tap end while tapped */
     uint8_t  x0, y0, travel;
     uint16_t sx, sy; /* last scaled position */
@@ -92,7 +96,7 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
         if (!tp.touching) {
             tp.touching = true;
             tp.drag     = tp.tapped;
-            tp.pressed  = false;
+            tp.pressed  = tp.drag || timer_elapsed(tp.tap_end) < TP_AFTER_TAP;
             tp.tapped   = false;
             tp.since    = timer_read();
             tp.x0       = ux;
@@ -106,7 +110,7 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
             if (tp.drag && tp.travel < TP_TAP_SLOP && timer_elapsed(tp.since) < TP_TAP_TERM) {
                 dx = dy = 0; /* maybe a double tap: jitter with the button down would be a drag */
             }
-            if (!tp.drag && !tp.pressed && tp.travel < TP_TAP_SLOP && timer_elapsed(tp.since) >= TP_LONG_PRESS) {
+            if (!tp.pressed && tp.travel < TP_TAP_SLOP && timer_elapsed(tp.since) >= TP_LONG_PRESS) {
                 tp.pressed  = true;
                 tp.click    = MOUSE_BTN2;
                 tp.click_at = timer_read();
@@ -117,6 +121,7 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
         cursor_glide_update(&glide, CONSTRAIN_HID_XY(dx), CONSTRAIN_HID_XY(dy), d.zValue);
     } else if (d.valid && tp.touching) {
         bool tap    = timer_elapsed(tp.since) < TP_TAP_TERM && tp.travel < TP_TAP_SLOP;
+        bool held   = tp.pressed && timer_elapsed(tp.since) >= TP_LONG_PRESS && tp.travel < TP_TAP_SLOP;
         tp.touching = false;
         last.touching = false;
         if (tp.drag) {
@@ -133,7 +138,10 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t report) {
             tp.tapped = true;
             tp.since  = timer_read();
         }
-        if (!tap && !tp.pressed) {
+        if (tap) {
+            tp.tap_end = timer_read();
+        }
+        if (!tap && !held) {
             glided = cursor_glide_start(&glide);
         } else {
             cursor_glide_update(&glide, 0, 0, 0);
