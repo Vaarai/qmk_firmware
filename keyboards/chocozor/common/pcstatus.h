@@ -14,6 +14,6 @@ bool pcstatus_receive(const uint8_t *data, uint8_t length);
 
 /* True while the host has sent a status in the last PCSTATUS_TIMEOUT ms */
 bool pcstatus_active(void);
-/* Draw the status on lines 0-6 (landscape, 21 x 8 or more lines); line 7 is
- * the caller's (blank after an oled_clear) */
+/* Draw the status on lines 0-7 (landscape, 21 x 8 lines); dashes and
+ * "Waiting for the PC" while no status comes */
 void pcstatus_render(void);

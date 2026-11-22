@@ -430,28 +430,19 @@ static const char *layer_label(void) {
     }
 }
 
-/* Landscape, 21 columns: logo in columns 0-5, text from column 6 on the
- * logo's 4 lines (centred vertically on the taller left screen)
- *   +0  layer               +2  DPI (ADJUST)
- *   +1  LNX / WIN (USB half) +3  MAGIC (MAGIC pointing on)
- * The PC status screen (left) shows MAGIC on its free bottom line. */
+/* Left screen: the PC status (common/pcstatus.c), always.
+ * Right screen, landscape, 21 columns: logo in columns 0-5, text from
+ * column 6 on the logo's 4 lines
+ *   +0  layer                +2  DPI (ADJUST)
+ *   +1  LNX / WIN (USB half) +3  MAGIC (MAGIC pointing on) */
 bool oled_task_user(void) {
-    uint8_t top = chocozor_logo_top();
-    char    dpi[16] = "";
-
-    /* Left screen: the PC status while the host helper sends it, else the
-     * same block as the right; clear when switching between the two */
-    static bool showing_status;
-    bool        status = is_keyboard_left() && pcstatus_active();
-    if (status != showing_status) {
-        oled_clear();
-        showing_status = status;
-    }
-    if (status) {
+    if (is_keyboard_left()) {
         pcstatus_render();
-        oled_write_field(0, 7, 21, magic_on() ? "MAGIC" : "", false);
         return false;
     }
+
+    uint8_t top = chocozor_logo_top();
+    char    dpi[16] = "";
 
     chocozor_render_logo();
 

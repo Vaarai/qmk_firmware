@@ -17,10 +17,11 @@
 
 #include "pcstatus.h"
 #include <stdio.h>
+#include <string.h>
 
 #define PCSTATUS_CMD 'P'
 #define PCSTATUS_VERSION 1
-#define PCSTATUS_TIMEOUT 3000 /* ms without a report before the screen goes back */
+#define PCSTATUS_TIMEOUT 3000 /* ms without a report before the screen shows dashes */
 #define NA8 0xFF
 
 typedef struct {
@@ -96,30 +97,48 @@ static void temp_text(char *buf, size_t size, uint8_t temp) {
     }
 }
 
+static void pct_text(char *buf, size_t size, const char *name, uint8_t pct) {
+    if (pct == NA8) {
+        snprintf(buf, size, "%s  --%% ", name);
+    } else {
+        snprintf(buf, size, "%s %3u%% ", name, pct);
+    }
+}
+
 /*  0  Thu 20 Nov   14:32:05
  *  2  CPU  23% [=====   ]  52C
  *  3  RAM  41% [========]
  *  4  GPU                  47C   (PCSTATUS_GPU builds, with a GPU sensor)
  *  6  Notifications       3
- *  7  left to the keymap (fire_v2_9: MAGIC pointing) */
+ *  7  "Waiting for the PC" while no status comes (dashes elsewhere) */
 void pcstatus_render(void) {
     static const char *const days[]   = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
     static const char *const months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
     char line[32], temp[8];
 
-    snprintf(line, sizeof(line), "%s %2u %s   %02u:%02u:%02u", status.weekday < 7 ? days[status.weekday] : "---", status.day,
-             status.month >= 1 && status.month <= 12 ? months[status.month - 1] : "---", status.hour, status.minute, status.second);
+    /* No report for PCSTATUS_TIMEOUT: every field unknown */
+    bool waiting = !pcstatus_active();
+    if (waiting) {
+        memset(&status, NA8, sizeof(status));
+    }
+
+    if (status.hour == NA8) {
+        snprintf(line, sizeof(line), "--- -- ---   --:--:--");
+    } else {
+        snprintf(line, sizeof(line), "%s %2u %s   %02u:%02u:%02u", status.weekday < 7 ? days[status.weekday] : "---", status.day,
+                 status.month >= 1 && status.month <= 12 ? months[status.month - 1] : "---", status.hour, status.minute, status.second);
+    }
     write_line(0, line);
     write_line(1, "");
 
     /* "CPU  23% " in columns 0-8, bar on pixels 54-95 (columns 9-15, never
      * written as text so it isn't redrawn every frame), temperature in 16-20 */
     temp_text(temp, sizeof(temp), status.cpu_temp);
-    snprintf(line, sizeof(line), "CPU %3u%% ", status.cpu);
+    pct_text(line, sizeof(line), "CPU", status.cpu);
     write_at(0, 2, line, 9);
     snprintf(line, sizeof(line), " %4s", temp);
     write_at(16, 2, line, 5);
-    snprintf(line, sizeof(line), "RAM %3u%% ", status.ram);
+    pct_text(line, sizeof(line), "RAM", status.ram);
     write_at(0, 3, line, 9);
     write_at(16, 3, "", 5);
 #ifdef PCSTATUS_GPU
@@ -134,8 +153,8 @@ void pcstatus_render(void) {
 #else
     write_line(4, "");
 #endif
-    draw_bar(54, 2, 42, status.cpu);
-    draw_bar(54, 3, 42, status.ram);
+    draw_bar(54, 2, 42, status.cpu == NA8 ? 0 : status.cpu);
+    draw_bar(54, 3, 42, status.ram == NA8 ? 0 : status.ram);
 
     write_line(5, "");
     if (status.notifications == 0xFFFF) {
@@ -144,5 +163,6 @@ void pcstatus_render(void) {
         snprintf(line, sizeof(line), "Notifications  %5u", status.notifications);
         write_line(6, line);
     }
+    write_line(7, waiting ? "Waiting for the PC" : "");
 }
 #endif
