@@ -263,6 +263,7 @@ static void magic_task(void) {
 
 void keyboard_post_init_user(void) {
     accents_init();
+    pcstatus_init();
     transaction_register_rpc(RPC_ID_USER_MAGIC, magic_rpc);
 }
 
@@ -505,6 +506,7 @@ bool apply_autocorrect(uint8_t backspaces, const char *str, char *typo, char *co
 
 void housekeeping_task_user(void) {
     accents_sync_task();
+    pcstatus_sync_task();
     if (pad_here()) {
         magic_pad_task();
     }

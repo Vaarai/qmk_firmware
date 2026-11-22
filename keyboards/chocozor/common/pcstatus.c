@@ -13,11 +13,20 @@
  *   [12-13] notifications, little endian
  * The keymap's raw_hid_receive passes reports on to pcstatus_receive, which
  * ignores other ids (e.g. the keyhud protocol, ids 1-9, MAGIC pointing 'M').
- * The GPU line is off unless PCSTATUS_GPU is defined (config.h). */
+ * The GPU line is off unless PCSTATUS_GPU is defined (config.h).
+ *
+ * Split: the status is drawn on the left screen. When the right half is the
+ * USB one, it passes each report on to the left half (RPC_ID_USER_PCSTATUS,
+ * to list in the keymap's SPLIT_TRANSACTION_IDS_USER), which then times it
+ * out on its own. Call pcstatus_init from keyboard_post_init_user and
+ * pcstatus_sync_task from housekeeping_task_user. */
 
 #include "pcstatus.h"
 #include <stdio.h>
 #include <string.h>
+#ifdef SPLIT_KEYBOARD
+#    include "transactions.h"
+#endif
 
 #define PCSTATUS_CMD 'P'
 #define PCSTATUS_VERSION 1
@@ -34,6 +43,7 @@ typedef struct {
 static pcstatus_t status;
 static uint32_t   received_at;
 static bool       received;
+static bool       pending; /* USB half: a report not yet passed to the screen half */
 
 bool pcstatus_receive(const uint8_t *data, uint8_t length) {
     if (length < 14 || data[0] != PCSTATUS_CMD || data[1] != PCSTATUS_VERSION) {
@@ -54,8 +64,38 @@ bool pcstatus_receive(const uint8_t *data, uint8_t length) {
     };
     received_at = timer_read32();
     received    = true;
+    pending     = true;
     return true;
 }
+
+#ifdef SPLIT_KEYBOARD
+/* Screen half: a report from the USB half */
+static void pcstatus_rpc(uint8_t in_len, const void *in, uint8_t out_len, void *out) {
+    if (in_len == sizeof(status)) {
+        memcpy(&status, in, sizeof(status));
+        received_at = timer_read32();
+        received    = true;
+    }
+}
+
+void pcstatus_init(void) {
+    transaction_register_rpc(RPC_ID_USER_PCSTATUS, pcstatus_rpc);
+}
+
+/* USB half, if it isn't the screen half: pass the last report on, once,
+ * retried on the next loop if the transfer fails */
+void pcstatus_sync_task(void) {
+    if (!pending || !is_keyboard_master()) {
+        return;
+    }
+    if (is_keyboard_left() || transaction_rpc_send(RPC_ID_USER_PCSTATUS, sizeof(status), &status)) {
+        pending = false;
+    }
+}
+#else
+void pcstatus_init(void) {}
+void pcstatus_sync_task(void) {}
+#endif
 
 bool pcstatus_active(void) {
     return received && timer_elapsed32(received_at) < PCSTATUS_TIMEOUT;

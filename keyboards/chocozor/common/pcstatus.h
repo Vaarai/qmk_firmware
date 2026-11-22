@@ -12,6 +12,12 @@
  * status ('P'), false for any other report */
 bool pcstatus_receive(const uint8_t *data, uint8_t length);
 
+/* Split: register the RPC that brings the status to the left (screen) half
+ * when the right half is the USB one (keyboard_post_init_user) */
+void pcstatus_init(void);
+/* Split, USB half: pass a new status on to the left half (housekeeping) */
+void pcstatus_sync_task(void);
+
 /* True while the host has sent a status in the last PCSTATUS_TIMEOUT ms */
 bool pcstatus_active(void);
 /* Draw the status on lines 0-7 (landscape, 21 x 8 lines); dashes and
