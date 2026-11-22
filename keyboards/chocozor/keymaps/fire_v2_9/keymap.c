@@ -141,7 +141,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * the elies keymap: while on, F19 is held down while a finger rests on the pad
  * (trackpad_rest_user: still for 60 ms, not a tap-drag), and the host pulls
  * the cursor to the gaze while it is down; moving or lifting the finger
- * releases it. CK_MAGIC (ADJUST) toggles it; off at power-up.
+ * releases it. CK_MAGIC (ADJUST) toggles it; on at power-up.
  *
  * Clicks while on: a long press never right clicks. A tap clicks where the
  * cursor is, unless the host moved the cursor during the touch: it then sends
@@ -159,7 +159,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 #define MAGIC_REQ_ON 0x01
 #define MAGIC_REQ_NO_CLICK 0x02
 
-static bool magic_pointing;  /* USB half: the toggle */
+static bool magic_pointing = true; /* USB half: the toggle, on at power-up */
 static bool magic_remote;    /* other half: the toggle as last sent */
 static bool magic_down;      /* USB half: F19 is down */
 static bool magic_no_click;  /* USB half: the host's 'M' waits to reach the pad */
