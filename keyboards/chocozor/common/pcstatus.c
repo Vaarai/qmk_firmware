@@ -145,12 +145,44 @@ static void pct_text(char *buf, size_t size, const char *name, uint8_t pct) {
     }
 }
 
-/*  0  Thu 20 Nov   14:32:05
- *  2  CPU  23% [=====   ]  52C
- *  3  RAM  41% [========]
- *  4  GPU                  47C   (PCSTATUS_GPU builds, with a GPU sensor)
- *  6  Notifications       3
- *  7  "Waiting for the PC" while no status comes (dashes elsewhere) */
+/* QMK's screen font is private to its driver: a copy of it for the big clock */
+#include OLED_FONT_H
+
+/* Text in double size (12 x 16 pixels a character) from pixel column x on
+ * text lines line and line + 1 */
+static void write_big(uint8_t x, uint8_t line, const char *text) {
+    for (; *text; text++, x += OLED_FONT_WIDTH * 2) {
+        const unsigned char *glyph = &font[(uint8_t)*text * OLED_FONT_WIDTH];
+        for (uint8_t col = 0; col < OLED_FONT_WIDTH; col++) {
+            uint8_t bits = pgm_read_byte(&glyph[col]);
+            for (uint8_t row = 0; row < 8; row++) {
+                bool    on = bits & (1 << row);
+                uint8_t px = x + col * 2, py = line * 8 + row * 2;
+                oled_write_pixel(px, py, on);
+                oled_write_pixel(px + 1, py, on);
+                oled_write_pixel(px, py + 1, on);
+                oled_write_pixel(px + 1, py + 1, on);
+            }
+        }
+    }
+}
+
+/* Pixel columns [x0, x1) of text lines line and line + 1 off */
+static void clear_big(uint8_t x0, uint8_t x1, uint8_t line) {
+    for (uint8_t x = x0; x < x1; x++) {
+        for (uint8_t y = line * 8; y < line * 8 + 16; y++) {
+            oled_write_pixel(x, y, false);
+        }
+    }
+}
+
+/*  0-1  14:32:05            (double size, centred)
+ *  2        Thu 20 Nov      (centred)
+ *  3    GPU             47C (PCSTATUS_GPU builds, with a GPU sensor)
+ *  4    CPU  23% [=====   ]  52C
+ *  5    RAM  41% [========]
+ *  6    Notifications       3
+ *  7    "Waiting for the PC" while no status comes (dashes elsewhere) */
 void pcstatus_render(void) {
     static const char *const days[]   = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
     static const char *const months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -162,41 +194,50 @@ void pcstatus_render(void) {
         memset(&status, NA8, sizeof(status));
     }
 
+    /* "hh:mm:ss" is 8 x 12 = 96 pixels: 16 free on each side */
     if (status.hour == NA8) {
-        snprintf(line, sizeof(line), "--- -- ---   --:--:--");
+        snprintf(line, sizeof(line), "--:--:--");
     } else {
-        snprintf(line, sizeof(line), "%s %2u %s   %02u:%02u:%02u", status.weekday < 7 ? days[status.weekday] : "---", status.day,
-                 status.month >= 1 && status.month <= 12 ? months[status.month - 1] : "---", status.hour, status.minute, status.second);
+        snprintf(line, sizeof(line), "%02u:%02u:%02u", status.hour, status.minute, status.second);
     }
-    write_line(0, line);
-    write_line(1, "");
+    clear_big(0, 16, 0);
+    write_big(16, 0, line);
+    clear_big(112, 128, 0);
+
+    if (status.hour == NA8) {
+        snprintf(line, sizeof(line), "%15s", "--- -- ---");
+    } else {
+        snprintf(line, sizeof(line), "     %s %2u %s", status.weekday < 7 ? days[status.weekday] : "---", status.day,
+                 status.month >= 1 && status.month <= 12 ? months[status.month - 1] : "---");
+    }
+    write_line(2, line);
+
+#ifdef PCSTATUS_GPU
+    /* GPU only when the host has a sensor for it */
+    if (status.gpu_temp == NA8) {
+        write_line(3, "");
+    } else {
+        temp_text(temp, sizeof(temp), status.gpu_temp);
+        snprintf(line, sizeof(line), "GPU              %4s", temp);
+        write_line(3, line);
+    }
+#else
+    write_line(3, "");
+#endif
 
     /* "CPU  23% " in columns 0-8, bar on pixels 54-95 (columns 9-15, never
      * written as text so it isn't redrawn every frame), temperature in 16-20 */
     temp_text(temp, sizeof(temp), status.cpu_temp);
     pct_text(line, sizeof(line), "CPU", status.cpu);
-    write_at(0, 2, line, 9);
+    write_at(0, 4, line, 9);
     snprintf(line, sizeof(line), " %4s", temp);
-    write_at(16, 2, line, 5);
+    write_at(16, 4, line, 5);
     pct_text(line, sizeof(line), "RAM", status.ram);
-    write_at(0, 3, line, 9);
-    write_at(16, 3, "", 5);
-#ifdef PCSTATUS_GPU
-    /* GPU only when the host has a sensor for it */
-    if (status.gpu_temp == NA8) {
-        write_line(4, "");
-    } else {
-        temp_text(temp, sizeof(temp), status.gpu_temp);
-        snprintf(line, sizeof(line), "GPU              %4s", temp);
-        write_line(4, line);
-    }
-#else
-    write_line(4, "");
-#endif
-    draw_bar(54, 2, 42, status.cpu == NA8 ? 0 : status.cpu);
-    draw_bar(54, 3, 42, status.ram == NA8 ? 0 : status.ram);
+    write_at(0, 5, line, 9);
+    write_at(16, 5, "", 5);
+    draw_bar(54, 4, 42, status.cpu == NA8 ? 0 : status.cpu);
+    draw_bar(54, 5, 42, status.ram == NA8 ? 0 : status.ram);
 
-    write_line(5, "");
     if (status.notifications == 0xFFFF) {
         write_line(6, "Notifications     --");
     } else {
