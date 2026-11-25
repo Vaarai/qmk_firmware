@@ -462,29 +462,23 @@ void pointing_device_init_user(void) {
     pointing_device_set_cpi(TRACKPAD_DEFAULT_DPI);
 }
 
-layer_state_t layer_state_set_user(layer_state_t state) {
-    SEND_STRING(SS_UP(X_LALT));
-    return state;
-}
-
+/* Knobs:
+ *   left   NAV / NUM: LED brightness, clockwise dimmer (saved, like UG_VALD)
+ *          other layers: F15 / F16 (bound to nothing yet, free for host
+ *          shortcuts)
+ *   right  volume down / up, every layer */
 bool encoder_update_user(uint8_t index, bool clockwise) {
-    switch (get_highest_layer(layer_state)) {
-        case _ALPHA:
-            if (index == 0) { tap_code((clockwise ? KC_DOWN : KC_UP)); }
-            else if (index == 1) { tap_code((clockwise ? KC_RIGHT : KC_LEFT)); }
-            break;
-        case _NAV:
-        case _NUM:
-        case _ADJUST:
-        case _G0:
-        case _G1:
-            if (index == 0) { tap_code((clockwise ? KC_VOLU : KC_VOLD)); }
-            else if (index == 1) {
-                /* - Hold Alt, it will be released at next layer switch in `layer_state_set_user()` */
-                SEND_STRING(SS_DOWN(X_LALT));
-                if (clockwise) { tap_code(KC_TAB); }
-                else { SEND_STRING(SS_DOWN(X_LSFT) SS_TAP(X_TAB) SS_UP(X_LSFT)); }
-            }
+    uint8_t layer = get_highest_layer(layer_state);
+    if (index == 0 && (layer == _NAV || layer == _NUM)) {
+        if (clockwise) {
+            rgb_matrix_decrease_val();
+        } else {
+            rgb_matrix_increase_val();
+        }
+    } else if (index == 0) {
+        tap_code(clockwise ? KC_F15 : KC_F16);
+    } else if (index == 1) {
+        tap_code(clockwise ? KC_VOLU : KC_VOLD);
     }
     return false;
 }

@@ -5,3 +5,6 @@
  * back the pad's rest (keymap.c), and the PC status to the left screen when
  * the right half is the USB one (common/pcstatus.c) */
 #define SPLIT_TRANSACTION_IDS_USER RPC_ID_USER_OS_SYNC, RPC_ID_USER_MAGIC, RPC_ID_USER_PCSTATUS
+
+/* Both knobs turn the other way round (every layer's actions swap sides) */
+#define ENCODER_DIRECTION_FLIP
